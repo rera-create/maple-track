@@ -1,0 +1,30 @@
+export const characters = [
+  { name: "Yunli",    cls: "Ren",          type: "Warrior",  level: 288, badge: "Main"  },
+  { name: "Lecia",    cls: "Hero",         type: "Warrior",  level: 287, badge: "Champ" },
+  { name: "Gremory",  cls: "Cadena",       type: "Thief",    level: 270, badge: "Champ" },
+  { name: "Guilty",   cls: "Bishop",       type: "Magician", level: 268, badge: "Champ" },
+  { name: "Iono",     cls: "Lynn",         type: "Magician", level: 263, badge: "Champ" },
+  { name: "Yutet",    cls: "Demon Slayer", type: "Warrior",  level: 262, badge: "WIP"   },
+  { name: "Kisaki",   cls: "Khali",        type: "Thief",    level: 260, badge: "WIP"   },
+  { name: "Kasel",    cls: "Kanna",        type: "Magician", level: 260, badge: "WIP"   },
+  { name: "Filene",   cls: "Fire/Poison",  type: "Mage",     level: 260, badge: "WIP"   },
+  { name: "Aijou",    cls: "Battle Mage",  type: "Magician", level: 260, badge: "WIP"   },
+  { name: "Fuyuko",   cls: "Aran",         type: "Warrior",  level: 260, badge: "WIP"   },
+  { name: "Solais",   cls: "Sia Astelle",  type: "Magician", level: 253, badge: "WIP"   },
+  { name: "Cordelia", cls: "Adele",        type: "Warrior",  level: 252, badge: "WIP"   },
+  { name: "Ramizel",  cls: "Lara",         type: "Magician", level: 251, badge: "WIP"   },
+  { name: "Yubel",    cls: "Shade",        type: "Warrior",  level: 251, badge: "WIP"   },
+  { name: "Ramuh",    cls: "Buccaneer",    type: "Pirate",   level: 250, badge: "WIP"   },
+]
+
+export const GRANDIS_THEMES = [
+  { id: "cernium",         label: "Cernium"        },
+  { id: "burning-cernium", label: "Burning Cernium" },
+  { id: "hotel-arcus",     label: "Hotel Arcus"     },
+  { id: "odium",           label: "Odium"           },
+  { id: "shangri-la",      label: "Shangri-La"      },
+  { id: "arteria",         label: "Arteria"         },
+  { id: "carcion",         label: "Carcion"         },
+  { id: "tallahart",       label: "Tallahart"       },
+  { id: "geardrak",        label: "Geardrak"        },
+]
