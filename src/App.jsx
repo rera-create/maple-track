@@ -702,7 +702,7 @@ function NavIcons({ activeThemeId, setActiveThemeId }) {
   ];
 
   const handleSelect = (id) => {
-    setActiveThemeId(id === activeThemeId ? null : id);
+    setActiveThemeId(id);
     setThemeOpen(false);
   };
 
