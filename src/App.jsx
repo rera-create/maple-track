@@ -262,10 +262,13 @@ function PrismCard({ char, index, isSel, isHov, onClick, onEnter, onLeave }) {
   const edgeOpacity  = lit ? 1   : 0.22;
   const glowStrength = lit ? "drop-shadow(0 0 4px rgba(240,220,128,0.9)) drop-shadow(0 0 12px rgba(240,220,128,0.5))" : "none";
 
+  const isMain = char.badge === "Main";
+  const riseDelay = `${index * 0.03 + 0.06}s`;
+
   return (
     <div
-      className={`prism ${isSel ? "sel" : ""}`}
-      style={{ animationDelay: `${index * 0.03 + 0.06}s` }}
+      className={`prism${isSel ? " sel" : ""}${isMain ? " is-main" : ""}`}
+      style={{ animationDelay: riseDelay, "--rise-delay": riseDelay }}
       onClick={onClick}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
@@ -396,6 +399,29 @@ function PrismCard({ char, index, isSel, isHov, onClick, onEnter, onLeave }) {
           </div>
         </div>
       </div>
+
+      {/* Particle shimmer — only rendered on Main, CSS controls visibility */}
+      {char.badge === "Main" && (
+        <div className="prism-particles" aria-hidden="true">
+          {[
+            { tx: "-8px",  delay: "0.0s", dur: "1.6s", left: "22%" },
+            { tx:  "5px",  delay: "0.3s", dur: "1.9s", left: "38%" },
+            { tx: "-4px",  delay: "0.7s", dur: "1.4s", left: "50%" },
+            { tx:  "9px",  delay: "0.2s", dur: "2.0s", left: "62%" },
+            { tx: "-6px",  delay: "0.9s", dur: "1.7s", left: "74%" },
+            { tx:  "3px",  delay: "0.5s", dur: "1.5s", left: "30%" },
+            { tx: "-10px", delay: "1.1s", dur: "1.8s", left: "58%" },
+            { tx:  "7px",  delay: "0.4s", dur: "1.6s", left: "44%" },
+          ].map((p, i) => (
+            <div key={i} className="particle" style={{
+              left: p.left,
+              "--tx":    p.tx,
+              "--delay": p.delay,
+              "--dur":   p.dur,
+            }}/>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -599,9 +625,13 @@ export default function CharSelect() {
         .grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
-          gap: 20px;
-          /* Top padding gives sprite overflow room above the card border */
-          padding-top: 80px;
+          /* Column gap must be wider than the sprite side overflow to prevent overlap */
+          gap: 24px;
+          /* Top padding = sprite overflow height so first row has room */
+          padding-top: 100px;
+          /* Side padding mirrors column gap so edge cards don't clip */
+          padding-left: 4px;
+          padding-right: 4px;
         }
 
         /* ── Prism card ── */
@@ -612,15 +642,20 @@ export default function CharSelect() {
           -webkit-backdrop-filter: blur(16px);
           border: 1px solid rgba(240,220,128,0.18);
           cursor: pointer;
-          overflow: visible;   /* sprite overflows top and sides */
+          overflow: visible;
           opacity: 0;
           animation: rise .38s ease forwards;
           transition: border-color .28s ease, box-shadow .28s ease, transform .22s ease;
+          /* Each hovered card rises above its neighbours */
+          z-index: 1;
         }
+        .prism:hover, .prism.sel { z-index: 10; }
         @keyframes rise {
           from { opacity:0; transform:translateY(10px); }
           to   { opacity:1; transform:translateY(0); }
         }
+
+        /* ── Default hover / selected ── */
         .prism:hover, .prism.sel {
           background: rgba(255,255,255,0.72);
           border-color: rgba(240,220,128,0.55);
@@ -629,6 +664,64 @@ export default function CharSelect() {
             0 0 0 1px rgba(240,220,128,0.14),
             0 8px 32px rgba(240,220,128,0.12);
           transform: translateY(-3px);
+        }
+
+        /* ── Main card — idle gold pulse on edges ── */
+        .prism.is-main {
+          border-color: rgba(240,220,128,0.35);
+          animation: rise .38s ease forwards, edge-pulse 3s ease-in-out infinite;
+          animation-delay: var(--rise-delay), 1s;
+        }
+        @keyframes edge-pulse {
+          0%, 100% {
+            box-shadow:
+              0 0 0 1px rgba(240,220,128,0.12),
+              0 0 12px rgba(240,220,128,0.08);
+          }
+          50% {
+            box-shadow:
+              0 0 0 1px rgba(240,220,128,0.45),
+              0 0 22px rgba(240,220,128,0.20),
+              inset 0 0 30px rgba(240,220,128,0.06);
+          }
+        }
+
+        /* ── Particle shimmer — floats up from bottom of Main card on hover ── */
+        .prism-particles {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 6;
+          overflow: visible;
+        }
+        .particle {
+          position: absolute;
+          bottom: 20%;
+          width: 3px; height: 3px;
+          border-radius: 50%;
+          background: var(--G);
+          opacity: 0;
+        }
+        .prism.is-main:hover .particle,
+        .prism.is-main.sel   .particle {
+          animation: shimmer-rise var(--dur) ease-out var(--delay) infinite;
+        }
+        @keyframes shimmer-rise {
+          0%   { transform: translate(var(--tx), 0)   scale(1);   opacity: 0; }
+          15%  { opacity: 0.9; }
+          80%  { opacity: 0.4; }
+          100% { transform: translate(var(--tx), -90px) scale(0); opacity: 0; }
+        }
+
+        /* ── Main card hover — full bloom ── */
+        .prism.is-main:hover, .prism.is-main.sel {
+          border-color: rgba(240,220,128,0.90);
+          box-shadow:
+            0 0 0 1px rgba(240,220,128,0.55),
+            0 0 32px rgba(240,220,128,0.28),
+            0 0 60px rgba(240,220,128,0.12),
+            inset 0 0 40px rgba(240,220,128,0.09);
+          animation: rise .38s ease forwards;
         }
 
         /* SVG edge overlay — fills the card exactly */
@@ -656,37 +749,93 @@ export default function CharSelect() {
           height: 100%;
         }
 
-        /* Sprite wrapper — sits above the card border, anchored to bottom */
+        /* Sprite wrapper — anchored to card, sprite floats above */
         .prism-sprite-wrap {
           position: relative;
           width: 100%;
-          height: 160px;          /* reserved zone — sprite overflows upward from here */
+          height: 90px;           /* visible zone inside the card border */
           display: flex;
-          align-items: flex-end;  /* anchor sprite to the bottom of the zone */
+          align-items: flex-end;
           justify-content: center;
           pointer-events: none;
-          /* clips left/right overflow but NOT top — top is open sky */
-          overflow: hidden;
-          margin-top: -80px;      /* pull zone up so sprite breaches card top edge */
+          overflow: visible;      /* sprite escapes upward freely */
         }
 
+        /* The sprite itself sits centred and overflows upward */
         .prism-sprite {
           display: block;
-          height: 200px;          /* fixed height — all sprites same size */
+          height: 200px;
           width: auto;
           object-fit: contain;
           object-position: bottom center;
-          /* Drop shadow so sprite reads against any background */
-          filter: drop-shadow(0 4px 12px rgba(0,0,0,0.18))
-                  drop-shadow(0 1px 3px rgba(0,0,0,0.12));
-          transition: filter .28s ease, transform .28s ease;
+          position: relative;
+          bottom: 0;
+          filter: drop-shadow(0 6px 14px rgba(0,0,0,0.22))
+                  drop-shadow(0 1px 3px rgba(0,0,0,0.14));
+          transition: filter .30s ease, transform .30s ease;
           pointer-events: none;
+          z-index: 4;
         }
-        .prism:hover .prism-sprite, .prism.sel .prism-sprite {
-          filter: drop-shadow(0 4px 16px rgba(240,220,128,0.35))
-                  drop-shadow(0 0 12px rgba(240,220,128,0.20))
-                  drop-shadow(0 1px 3px rgba(0,0,0,0.10));
-          transform: translateY(-4px);
+
+        /* Hover lift — all cards */
+        .prism:hover .prism-sprite,
+        .prism.sel   .prism-sprite {
+          transform: translateY(-8px) scale(1.04);
+          filter: drop-shadow(0 10px 20px rgba(0,0,0,0.18))
+                  drop-shadow(0 0 14px rgba(240,220,128,0.30))
+                  drop-shadow(0 0 30px rgba(240,220,128,0.14));
+        }
+
+        /* Main card hover — stronger gold aura on sprite */
+        .prism.is-main:hover .prism-sprite,
+        .prism.is-main.sel   .prism-sprite {
+          transform: translateY(-10px) scale(1.06);
+          filter: drop-shadow(0 10px 22px rgba(0,0,0,0.16))
+                  drop-shadow(0 0 20px rgba(240,220,128,0.55))
+                  drop-shadow(0 0 40px rgba(240,220,128,0.28));
+        }
+
+        /* Side vignettes — gradient overlays that simulate wrap-around shadow */
+        .prism-sprite-wrap::before,
+        .prism-sprite-wrap::after {
+          content: '';
+          position: absolute;
+          top: -110px;            /* reach up to cover the full sprite height */
+          bottom: 0;
+          width: 28%;
+          pointer-events: none;
+          z-index: 5;
+        }
+        /* Left vignette */
+        .prism-sprite-wrap::before {
+          left: 0;
+          background: linear-gradient(to right,
+            rgba(255,255,255,0.72) 0%,
+            rgba(255,255,255,0.38) 40%,
+            transparent 100%);
+        }
+        /* Right vignette */
+        .prism-sprite-wrap::after {
+          right: 0;
+          background: linear-gradient(to left,
+            rgba(255,255,255,0.72) 0%,
+            rgba(255,255,255,0.38) 40%,
+            transparent 100%);
+        }
+        /* On hover, soften the vignettes so we see more of the sprite */
+        .prism:hover .prism-sprite-wrap::before,
+        .prism.sel   .prism-sprite-wrap::before {
+          background: linear-gradient(to right,
+            rgba(255,255,255,0.55) 0%,
+            rgba(255,255,255,0.20) 40%,
+            transparent 100%);
+        }
+        .prism:hover .prism-sprite-wrap::after,
+        .prism.sel   .prism-sprite-wrap::after {
+          background: linear-gradient(to left,
+            rgba(255,255,255,0.55) 0%,
+            rgba(255,255,255,0.20) 40%,
+            transparent 100%);
         }
 
         /* Fallback initial circle when image not yet uploaded */
@@ -725,6 +874,19 @@ export default function CharSelect() {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          transition: letter-spacing .3s ease, filter .3s ease, color .3s ease;
+        }
+        .prism:hover .prism-name,
+        .prism.sel   .prism-name {
+          letter-spacing: .01em;
+          color: #000;
+        }
+        /* Main card — name lights up gold on hover */
+        .prism.is-main:hover .prism-name,
+        .prism.is-main.sel   .prism-name {
+          color: #c8a030;
+          filter: drop-shadow(0 0 8px rgba(240,220,128,0.7));
+          letter-spacing: .04em;
         }
 
         .prism-cls {
