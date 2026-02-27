@@ -431,8 +431,43 @@ export default function App() {
   const [selected, setSelected] = useState(null);
   const [mounted,  setMounted]  = useState(false);
   const [hovered,  setHovered]  = useState(null);
-  const [theme,    setTheme]    = useState("pearl");
   const [navPage,  setNavPage]  = useState("experience");
+  // colorA = background/surface tone, colorB = accent/gold tone
+  const [colorA,   setColorA]   = useState("#ffffff");
+  const [colorB,   setColorB]   = useState("#F0DC80");
+  const [pickerOpen, setPickerOpen] = useState(null); // "A" | "B" | null
+
+  // Derive rgba helper from a hex color
+  const hexToRgb = (hex) => {
+    const r = parseInt(hex.slice(1,3),16);
+    const g = parseInt(hex.slice(3,5),16);
+    const b = parseInt(hex.slice(5,7),16);
+    return \`\${r},\${g},\${b}\`;
+  };
+
+  // Is the background dark? Used for text contrast
+  const isDark = (hex) => {
+    const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+    return (r*299 + g*587 + b*114) / 1000 < 128;
+  };
+
+  const dark = isDark(colorA);
+
+  // Build inline CSS vars from chosen colors
+  const themeVars = {
+    "--G":           colorB,
+    "--Gr":          hexToRgb(colorB),
+    "--bg":          colorA,
+    "--card-bg":     dark ? `rgba(${hexToRgb(colorA)},0.75)` : `rgba(${hexToRgb(colorA)},0.52)`,
+    "--card-hover":  dark ? `rgba(${hexToRgb(colorA)},0.90)` : `rgba(${hexToRgb(colorA)},0.72)`,
+    "--sidebar-bg":  dark ? `rgba(${hexToRgb(colorA)},0.88)` : `rgba(${hexToRgb(colorA)},0.68)`,
+    "--border":      `rgba(${hexToRgb(colorB)},0.22)`,
+    "--text":        dark ? "#f0f0f0" : "#111111",
+    "--text-mid":    dark ? "#aaaaaa" : "#555555",
+    "--dim":         dark ? "#777777" : "#999999",
+    "--nav-active-bg":   `rgba(${hexToRgb(colorB)},0.10)`,
+    "--nav-active-text": dark ? "#ffffff" : "#111111",
+  };
 
   useEffect(() => { setTimeout(() => setMounted(true), 60); }, []);
 
@@ -464,25 +499,6 @@ export default function App() {
           --nav-active-bg: rgba(240,220,128,0.10);
           --nav-active-text: #111;
           --mono: 'DM Mono', monospace;
-        }
-
-        /* ── Theme: Obsidian — near-black base, brighter gold ── */
-        [data-theme="obsidian"] {
-          --G:          #FFE566;
-          --Gr:         255,229,102;
-          --Gdim:       rgba(255,229,102,0.22);
-          --Glo:        rgba(255,229,102,0.70);
-          --bg:         #0e0e0e;
-          --card-bg:    rgba(22,22,22,0.75);
-          --card-hover: rgba(30,30,30,0.90);
-          --sidebar-bg: rgba(14,14,14,0.85);
-          --border:     rgba(255,229,102,0.18);
-          --text:       #f0f0f0;
-          --text-mid:   #aaaaaa;
-          --dim:        #666666;
-          --dim2:       #444444;
-          --nav-active-bg: rgba(255,229,102,0.10);
-          --nav-active-text: #fff;
         }
 
         html, body { background: var(--bg); }
@@ -709,52 +725,95 @@ export default function App() {
           background: linear-gradient(90deg, rgba(var(--Gr),0.25), transparent);
         }
 
-        /* Theme toggle at bottom of sidebar */
-        .theme-toggle {
-          padding: 20px 36px 0;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-top: auto;
+        /* ── Color customizer ── */
+        .color-section {
+          padding: 24px 36px 32px;
+          border-top: 1px solid rgba(var(--Gr),0.10);
+          margin-top: 16px;
         }
-        .theme-toggle-label {
+        .color-section-label {
           font-family: var(--mono);
           font-size: 8px;
-          letter-spacing: .20em;
+          letter-spacing: .28em;
           text-transform: uppercase;
           color: var(--dim);
-          flex: 1;
+          opacity: 0.6;
+          margin-bottom: 16px;
         }
-        .theme-pills {
+        .color-row {
           display: flex;
-          gap: 6px;
+          flex-direction: column;
+          gap: 12px;
         }
-        .theme-pill {
-          width: 28px; height: 16px;
-          border: 1px solid rgba(var(--Gr),0.25);
+        .color-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .color-item-label {
+          font-family: var(--mono);
+          font-size: 9px;
+          color: var(--dim);
+          letter-spacing: .12em;
+          flex: 1;
+          text-transform: uppercase;
+        }
+        /* The swatch button that opens the picker */
+        .color-swatch-btn {
+          width: 28px; height: 28px;
+          border: 1px solid rgba(var(--Gr),0.30);
           cursor: pointer;
           position: relative;
-          display: flex; align-items: center; justify-content: center;
-          transition: border-color .12s;
-          background: transparent;
+          padding: 0;
+          transition: border-color .1s, transform .1s;
+          flex-shrink: 0;
+        }
+        .color-swatch-btn:hover {
+          border-color: rgba(var(--Gr),0.7);
+          transform: scale(1.08);
+        }
+        .color-swatch-btn.open {
+          border-color: var(--G);
+          box-shadow: 0 0 8px rgba(var(--Gr),0.4);
+        }
+        /* Native color input hidden behind swatch */
+        .color-native {
+          position: absolute;
+          inset: 0;
+          opacity: 0;
+          cursor: pointer;
+          width: 100%;
+          height: 100%;
+          border: none;
           padding: 0;
         }
-        .theme-pill:hover { border-color: rgba(var(--Gr),0.6); }
-        .theme-pill.active { border-color: var(--G); }
-        .theme-pill.active::after {
-          content: '';
-          position: absolute;
-          inset: 2px;
-          background: var(--G);
-          opacity: 0.3;
+        .color-hex {
+          font-family: var(--mono);
+          font-size: 9px;
+          color: var(--dim);
+          letter-spacing: .06em;
+          min-width: 52px;
+          text-align: right;
         }
-        /* Pearl swatch */
-        .theme-pill.pearl .swatch { background: #f5f5f5; }
-        /* Obsidian swatch */
-        .theme-pill.obsidian .swatch { background: #111; }
-        .swatch {
-          width: 12px; height: 8px;
-          position: relative; z-index: 1;
+
+        /* Preset swatches below each picker */
+        .color-presets {
+          display: flex;
+          gap: 5px;
+          flex-wrap: wrap;
+          margin-top: 4px;
+          padding-left: 40px;
+        }
+        .color-preset {
+          width: 14px; height: 14px;
+          border: 1px solid rgba(var(--Gr),0.15);
+          cursor: pointer;
+          transition: transform .08s, border-color .08s;
+          padding: 0;
+        }
+        .color-preset:hover {
+          transform: scale(1.2);
+          border-color: rgba(var(--Gr),0.5);
         }
 
         /* ── Right panel — cards + detail ── */
@@ -823,16 +882,14 @@ export default function App() {
           filter: drop-shadow(0 0 4px rgba(240,220,128,.7));
         }
 
-        /* ── Prism grid — tall narrow cards ── */
+        /* ── Prism grid — 3 columns fixed ── */
         .grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
-          /* Column gap must be wider than the sprite side overflow to prevent overlap */
-          column-gap: 24px;
-          row-gap: 120px;          /* sprites are ~200px tall, need room between rows */
-          padding-top: 110px;      /* headroom for first row overflow */
-          padding-left: 4px;
-          padding-right: 4px;
+          grid-template-columns: repeat(3, 1fr);
+          column-gap: 48px;
+          row-gap: 140px;
+          padding-top: 120px;
+          padding-bottom: 40px;
         }
 
         /* ── Prism card ── */
@@ -898,10 +955,10 @@ export default function App() {
         .particle {
           position: absolute;
           bottom: 18%;
-          width: var(--sz, 4px); height: var(--sz, 4px);
+          width: 3px; height: 3px;
           border-radius: 50%;
           background: var(--G);
-          box-shadow: 0 0 6px 2px var(--G), 0 0 14px 4px rgba(var(--Gr),0.6);
+          box-shadow: 0 0 4px 1px var(--G), 0 0 8px 2px rgba(var(--Gr),0.5);
           opacity: 0;
         }
         .prism.is-main:hover .particle,
@@ -1270,7 +1327,7 @@ export default function App() {
         ::-webkit-scrollbar-thumb { background: rgba(var(--Gr),0.25); }
       `}</style>
 
-      <div className="root" data-theme={theme === "obsidian" ? "obsidian" : undefined}>
+      <div className="root" style={themeVars}>
         <Background/>
 
         <div className="layout">
@@ -1333,20 +1390,51 @@ export default function App() {
                 ))}
               </nav>
 
-              {/* Theme toggle — natural flow, no box */}
-              <div className="theme-toggle">
-                <span className="theme-toggle-label">Theme</span>
-                <div className="theme-pills">
+              {/* Color customizer */}
+              <div className="color-section">
+                <div className="color-section-label">Appearance</div>
+                <div className="color-row">
                   {[
-                    { id:"pearl",    label:"Pearl" },
-                    { id:"obsidian", label:"Obsidian" },
-                  ].map(t => (
-                    <button key={t.id}
-                      className={`theme-pill ${t.id}${theme===t.id?" active":""}`}
-                      onClick={() => setTheme(t.id)}
-                      title={t.label}>
-                      <div className="swatch"/>
-                    </button>
+                    {
+                      key: "A", label: "Surface",
+                      value: colorA, onChange: setColorA,
+                      presets: ["#ffffff","#f5f0e8","#0e0e0e","#0d1117","#1a1a2e","#0f0e17","#1c1c1c","#f0f4f8"],
+                    },
+                    {
+                      key: "B", label: "Accent",
+                      value: colorB, onChange: setColorB,
+                      presets: ["#F0DC80","#FFE566","#a8edea","#ffd6e0","#c3f0ca","#b8b8ff","#ffa07a","#e0c3fc"],
+                    },
+                  ].map(({ key, label, value, onChange, presets }) => (
+                    <div key={key}>
+                      <div className="color-item">
+                        <span className="color-item-label">{label}</span>
+                        <span className="color-hex">{value.toUpperCase()}</span>
+                        <button
+                          className={`color-swatch-btn${pickerOpen===key?" open":""}`}
+                          style={{ background: value }}
+                          onClick={() => setPickerOpen(pickerOpen===key ? null : key)}
+                        >
+                          <input
+                            type="color"
+                            className="color-native"
+                            value={value}
+                            onChange={e => onChange(e.target.value)}
+                            onFocus={() => setPickerOpen(key)}
+                            onBlur={() => setPickerOpen(null)}
+                          />
+                        </button>
+                      </div>
+                      <div className="color-presets">
+                        {presets.map(p => (
+                          <button key={p} className="color-preset"
+                            style={{ background: p }}
+                            onClick={() => onChange(p)}
+                            title={p}
+                          />
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
