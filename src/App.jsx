@@ -761,7 +761,7 @@ export default function App() {
         .grid {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 180px));
-          column-gap: 48px;
+          column-gap: 72px;
           row-gap: 140px;
           padding-top: 120px;
           padding-bottom: 40px;
@@ -830,22 +830,24 @@ export default function App() {
         .particle {
           position: absolute;
           bottom: 18%;
-          width: 3px; height: 3px;
-          border-radius: 50%;
-          background: var(--G);
-          box-shadow: 0 0 4px 1px var(--G), 0 0 8px 2px rgba(var(--Gr),0.5);
+          width: 1px;
+          height: 18px;
+          border-radius: 1px;
+          background: linear-gradient(to top, var(--G), transparent);
+          box-shadow: 0 0 3px 0px var(--G);
           opacity: 0;
+          z-index: 8;  /* above sprite (4), vignettes (5), edges (2) */
         }
         .prism.is-main:hover .particle,
         .prism.is-main.sel   .particle {
           animation: shimmer-rise var(--dur) ease-in-out var(--delay) infinite;
         }
         @keyframes shimmer-rise {
-          0%   { transform: translate(var(--tx), 0)      scale(1);    opacity: 0;   }
-          12%  { opacity: 1; }
-          40%  { opacity: 0.85; }
-          75%  { opacity: 0.5; }
-          100% { transform: translate(var(--tx), -130px) scale(0.2);  opacity: 0;   }
+          0%   { transform: translate(var(--tx), 0)       scaleY(1);   opacity: 0;   }
+          10%  { opacity: 0.9; }
+          50%  { opacity: 0.6; }
+          85%  { opacity: 0.2; }
+          100% { transform: translate(var(--tx), -140px)  scaleY(0.3); opacity: 0;   }
         }
 
         /* ── Main card hover — full bloom ── */
