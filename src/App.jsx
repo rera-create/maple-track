@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 
-// ── Animated background — Crown aesthetic ────────────────────────────────────
+// ── Animated background — Crown: pillars of light, heavy dust atmosphere ─────
 function Background() {
   const canvasRef = useRef(null);
   useEffect(() => {
@@ -12,173 +12,159 @@ function Background() {
     window.addEventListener("resize", resize);
 
     const TWO_PI = Math.PI * 2;
-    const G  = (a) => `rgba(220,185, 80,${a})`;   // warm gold
-    const Gw = (a) => `rgba(255,235,140,${a})`;   // bright gold highlight
 
-    // God rays — vertical light shafts from top, like Crown title screen
-    const rays = [
-      { x:0.32, w:0.018, al:0.09, ph:0.0,  spd:0.00035 },
-      { x:0.48, w:0.030, al:0.14, ph:1.4,  spd:0.00028 },
-      { x:0.62, w:0.016, al:0.08, ph:2.8,  spd:0.00040 },
-      { x:0.55, w:0.050, al:0.10, ph:0.8,  spd:0.00022 },
-      { x:0.41, w:0.012, al:0.07, ph:3.5,  spd:0.00048 },
-      { x:0.70, w:0.022, al:0.09, ph:2.1,  spd:0.00031 },
-      { x:0.25, w:0.014, al:0.06, ph:4.2,  spd:0.00038 },
+    // Pillars of light — tall, narrow, softly glowing columns scattered across scene
+    // Each has a base position, width, height reach, and independent breathing phase
+    const pillars = [
+      { x:0.08,  w:0.006, h:0.70, al:0.18, ph:0.0,  spd:0.00028, warm:0.9 },
+      { x:0.19,  w:0.011, h:0.85, al:0.26, ph:2.3,  spd:0.00022, warm:1.0 },
+      { x:0.31,  w:0.005, h:0.55, al:0.14, ph:1.1,  spd:0.00035, warm:0.8 },
+      { x:0.43,  w:0.018, h:0.95, al:0.32, ph:4.0,  spd:0.00018, warm:1.0 },
+      { x:0.50,  w:0.028, h:1.00, al:0.42, ph:0.7,  spd:0.00015, warm:1.0 },  // center — tallest
+      { x:0.57,  w:0.016, h:0.90, al:0.28, ph:3.2,  spd:0.00020, warm:1.0 },
+      { x:0.67,  w:0.007, h:0.60, al:0.16, ph:1.8,  spd:0.00030, warm:0.9 },
+      { x:0.77,  w:0.013, h:0.80, al:0.24, ph:5.1,  spd:0.00025, warm:1.0 },
+      { x:0.88,  w:0.009, h:0.65, al:0.20, ph:2.9,  spd:0.00032, warm:0.8 },
+      { x:0.95,  w:0.005, h:0.50, al:0.13, ph:0.4,  spd:0.00038, warm:0.7 },
+      // secondary faint ones for depth
+      { x:0.13,  w:0.004, h:0.45, al:0.10, ph:3.7,  spd:0.00042, warm:0.7 },
+      { x:0.36,  w:0.006, h:0.52, al:0.12, ph:2.0,  spd:0.00033, warm:0.8 },
+      { x:0.61,  w:0.005, h:0.48, al:0.11, ph:4.6,  spd:0.00036, warm:0.7 },
+      { x:0.83,  w:0.007, h:0.58, al:0.13, ph:1.5,  spd:0.00029, warm:0.8 },
     ];
 
-    // Ambient gold bloom orbs — very dim, deep in background
-    const orbs = [
-      { x:0.50, y:0.00, r:0.55, ph:0.0, vy: 0 },   // top center crown bloom
-      { x:0.18, y:0.55, r:0.30, ph:1.8, vy:-0.00005 },
-      { x:0.85, y:0.45, r:0.28, ph:3.2, vy: 0.00004 },
-    ];
-
-    // Dust motes — tiny gold particles drifting upward
-    const motes = Array.from({length: 55}, () => ({
-      x: Math.random(),
-      y: Math.random(),
-      r: 0.4 + Math.random() * 1.0,
-      vx: (Math.random() - 0.5) * 0.00015,
-      vy: -(0.00012 + Math.random() * 0.00020),
+    // Large dust motes — visible, atmospheric, like lit particles in a dark hall
+    const motes = Array.from({length: 160}, (_, i) => ({
+      x:  Math.random(),
+      y:  Math.random(),
+      r:  0.5 + Math.random() * 1.8,           // bigger range
+      vx: (Math.random() - 0.5) * 0.00012,
+      vy: -(0.00008 + Math.random() * 0.00018), // slow upward drift
       ph: Math.random() * TWO_PI,
-      al: 0.15 + Math.random() * 0.35,
+      al: 0.25 + Math.random() * 0.55,          // much brighter
+      // motes near pillars are brighter
+      near: Math.random() > 0.6,
     }));
 
-    // Subtle ring clusters — very dim, background texture only
-    const clusters = [
-      {
-        cx:0.84, cy:0.18,
-        rings:[
-          { r:110, spd: 0.0003, ticks:60, tkLen:5, al:0.08 },
-          { r: 72, spd:-0.0006, ticks:30, tkLen:4, al:0.11 },
-          { r: 38, spd: 0.0011, ticks:16, tkLen:3, al:0.14 },
-        ],
-        scanSpd:0.0014, scanAl:0.07, scanArc:0.50, angle:0,
-      },
-      {
-        cx:0.10, cy:0.75,
-        rings:[
-          { r: 90, spd:-0.0004, ticks:48, tkLen:4, al:0.07 },
-          { r: 55, spd: 0.0008, ticks:24, tkLen:3, al:0.10 },
-          { r: 26, spd:-0.0014, ticks:10, tkLen:3, al:0.13 },
-        ],
-        scanSpd:-0.0018, scanAl:0.06, scanArc:0.42, angle:2.1,
-      },
-    ];
-    clusters.forEach(cl => cl.rings.forEach(r => { r.rot = 0; }));
-
-    const drawRing = (cx, cy, ring, rot) => {
-      ctx.beginPath();
-      ctx.arc(cx, cy, ring.r, 0, TWO_PI);
-      ctx.strokeStyle = G(ring.al);
-      ctx.lineWidth = 0.6;
-      ctx.stroke();
-      for (let i = 0; i < ring.ticks; i++) {
-        const angle = rot + (i / ring.ticks) * TWO_PI;
-        const major = i % (ring.ticks / 4) === 0;
-        const len = major ? ring.tkLen * 1.6 : ring.tkLen;
-        ctx.beginPath();
-        ctx.moveTo(cx + Math.cos(angle)*ring.r, cy + Math.sin(angle)*ring.r);
-        ctx.lineTo(cx + Math.cos(angle)*(ring.r-len), cy + Math.sin(angle)*(ring.r-len));
-        ctx.strokeStyle = G(major ? ring.al*1.5 : ring.al);
-        ctx.lineWidth = major ? 0.9 : 0.5;
-        ctx.stroke();
-      }
-    };
-
-    const drawScan = (cx, cy, maxR, angle, arc, al) => {
-      for (let i = 0; i < 16; i++) {
-        const frac = i/16;
-        const a0 = (angle-arc)+frac*arc, a1 = (angle-arc)+(frac+1/16)*arc;
-        ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,maxR,a0,a1); ctx.closePath();
-        ctx.fillStyle = G(al*frac*frac); ctx.fill();
-      }
-      ctx.beginPath(); ctx.moveTo(cx,cy);
-      ctx.lineTo(cx+Math.cos(angle)*maxR, cy+Math.sin(angle)*maxR);
-      ctx.strokeStyle = Gw(al*1.8); ctx.lineWidth = 1.0; ctx.stroke();
-    };
+    // Micro sparkles — very bright, instant flash, rare
+    const sparks = Array.from({length: 18}, () => ({
+      x: Math.random(), y: Math.random(),
+      ph: Math.random() * TWO_PI,
+      spd: 0.003 + Math.random() * 0.006,
+      al: 0.6 + Math.random() * 0.4,
+    }));
 
     let t = 0;
     const draw = () => {
       const W = canvas.width, H = canvas.height;
       ctx.clearRect(0,0,W,H);
 
-      // ── Base: deep black with slight warm vignette center ──
-      ctx.fillStyle = "#0a0804";
+      // ── Base: near-black warm ──
+      ctx.fillStyle = "#080604";
       ctx.fillRect(0,0,W,H);
 
-      // Warm center bloom (crown light source)
-      const bloom = ctx.createRadialGradient(W*0.5,H*0.08,0, W*0.5,H*0.08, H*0.75);
-      bloom.addColorStop(0,   "rgba(180,130,30,0.22)");
-      bloom.addColorStop(0.3, "rgba(140,100,20,0.10)");
-      bloom.addColorStop(1,   "rgba(0,0,0,0)");
-      ctx.fillStyle = bloom; ctx.fillRect(0,0,W,H);
+      // ── Soft ambient top bloom — light source above scene ──
+      const topBloom = ctx.createRadialGradient(W*0.5,-H*0.05,0, W*0.5,0,H*0.55);
+      topBloom.addColorStop(0,   "rgba(160,115,25,0.28)");
+      topBloom.addColorStop(0.4, "rgba(120, 85,15,0.10)");
+      topBloom.addColorStop(1,   "rgba(0,0,0,0)");
+      ctx.fillStyle=topBloom; ctx.fillRect(0,0,W,H);
 
-      // ── Orbs ──
-      for (const o of orbs) {
-        o.y += o.vy;
-        const al = 0.12 + 0.04 * Math.sin(t*0.0005 + o.ph);
-        const cx=o.x*W, cy=o.y*H, rad=o.r*Math.max(W,H);
-        const g = ctx.createRadialGradient(cx,cy,0,cx,cy,rad);
-        g.addColorStop(0, `rgba(200,155,40,${al})`);
-        g.addColorStop(0.5, `rgba(160,120,25,${al*0.3})`);
-        g.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.beginPath(); ctx.arc(cx,cy,rad,0,TWO_PI);
-        ctx.fillStyle=g; ctx.fill();
-      }
+      // ── Pillars of light ──
+      // Rendered back-to-front: wide soft glow first, then sharp core
+      for (const p of pillars) {
+        const breath = 0.7 + 0.3 * Math.sin(t * p.spd * 300 + p.ph);
+        const alpha  = p.al * breath;
+        const cx     = p.x * W;
+        const pilH   = p.h * H;
+        const pw     = p.w * W;
 
-      // ── God rays ──
-      for (const ray of rays) {
-        const al = ray.al * (0.7 + 0.3 * Math.sin(t*ray.spd*400 + ray.ph));
-        const cx = ray.x * W;
-        const rayW = ray.w * W;
-        const grad = ctx.createLinearGradient(cx, 0, cx, H*0.85);
-        grad.addColorStop(0,   `rgba(220,175,60,${al})`);
-        grad.addColorStop(0.25,`rgba(200,155,40,${al*0.6})`);
-        grad.addColorStop(0.7, `rgba(180,130,25,${al*0.15})`);
-        grad.addColorStop(1,   "rgba(0,0,0,0)");
+        // Outer atmospheric haze — very wide, very faint
+        const hazeW = pw * 14;
+        const haze  = ctx.createLinearGradient(cx, 0, cx, pilH);
+        haze.addColorStop(0,    `rgba(180,130,30,${alpha*0.18})`);
+        haze.addColorStop(0.15, `rgba(160,115,25,${alpha*0.10})`);
+        haze.addColorStop(0.6,  `rgba(140,100,18,${alpha*0.04})`);
+        haze.addColorStop(1,    "rgba(0,0,0,0)");
         ctx.save();
-        ctx.globalAlpha = 1;
-        // slight taper: wide at top, narrow at bottom
+        ctx.globalCompositeOperation = "screen";
         ctx.beginPath();
-        ctx.moveTo(cx - rayW*1.5, 0);
-        ctx.lineTo(cx + rayW*1.5, 0);
-        ctx.lineTo(cx + rayW*0.3, H*0.85);
-        ctx.lineTo(cx - rayW*0.3, H*0.85);
+        ctx.moveTo(cx - hazeW, 0);
+        ctx.lineTo(cx + hazeW, 0);
+        ctx.lineTo(cx + hazeW*0.15, pilH);
+        ctx.lineTo(cx - hazeW*0.15, pilH);
         ctx.closePath();
-        ctx.fillStyle = grad;
+        ctx.fillStyle = haze;
+        ctx.fill();
+
+        // Core pillar — narrow, bright, hard-edged at top
+        const coreW = pw * 1.8;
+        const core  = ctx.createLinearGradient(cx, 0, cx, pilH);
+        core.addColorStop(0,    `rgba(240,200,80,${alpha * p.warm})`);
+        core.addColorStop(0.08, `rgba(220,175,55,${alpha*0.75*p.warm})`);
+        core.addColorStop(0.35, `rgba(190,145,35,${alpha*0.30})`);
+        core.addColorStop(0.75, `rgba(160,120,20,${alpha*0.08})`);
+        core.addColorStop(1,    "rgba(0,0,0,0)");
+        ctx.beginPath();
+        ctx.moveTo(cx - coreW, 0);
+        ctx.lineTo(cx + coreW, 0);
+        ctx.lineTo(cx + coreW*0.08, pilH);
+        ctx.lineTo(cx - coreW*0.08, pilH);
+        ctx.closePath();
+        ctx.fillStyle = core;
         ctx.fill();
         ctx.restore();
       }
 
-      // ── Dust motes ──
+      // ── Dust motes — heavy visible atmospheric particles ──
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
       for (const m of motes) {
         m.x += m.vx; m.y += m.vy;
-        if (m.y < -0.01) m.y = 1.01;
-        if (m.x < 0)  m.x = 1;
-        if (m.x > 1)  m.x = 0;
-        const al = m.al * (0.5 + 0.5 * Math.sin(t*0.0018 + m.ph));
+        if (m.y < -0.02) { m.y = 1.02; m.x = Math.random(); }
+        if (m.x <  0)    m.x = 1;
+        if (m.x >  1)    m.x = 0;
+        // brighter if mote is inside a pillar zone
+        let boost = 1;
+        for (const p of pillars) {
+          if (Math.abs(m.x - p.x) < p.w * 8) { boost = 2.2; break; }
+        }
+        const al = m.al * boost * (0.4 + 0.6 * Math.sin(t*0.0015 + m.ph));
+        const capped = Math.min(al, 0.95);
+        // slight glow: draw a soft outer ring then bright center
+        const grd = ctx.createRadialGradient(m.x*W, m.y*H, 0, m.x*W, m.y*H, m.r*3.5);
+        grd.addColorStop(0,   `rgba(255,235,140,${capped})`);
+        grd.addColorStop(0.4, `rgba(240,200,80,${capped*0.4})`);
+        grd.addColorStop(1,   "rgba(0,0,0,0)");
         ctx.beginPath();
-        ctx.arc(m.x*W, m.y*H, m.r, 0, TWO_PI);
-        ctx.fillStyle = Gw(al);
+        ctx.arc(m.x*W, m.y*H, m.r*3.5, 0, TWO_PI);
+        ctx.fillStyle = grd;
         ctx.fill();
       }
+      ctx.restore();
 
-      // ── Ring clusters (very subtle) ──
-      for (const cl of clusters) {
-        const cx=cl.cx*W, cy=cl.cy*H;
-        cl.angle += cl.scanSpd;
-        for (const ring of cl.rings) { ring.rot+=ring.spd; drawRing(cx,cy,ring,ring.rot); }
-        drawScan(cx, cy, cl.rings[0].r, cl.angle, cl.scanArc, cl.scanAl);
-        ctx.beginPath(); ctx.arc(cx,cy,2,0,TWO_PI);
-        ctx.fillStyle=G(0.4); ctx.fill();
+      // ── Micro sparkles — brief bright flashes ──
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      for (const s of sparks) {
+        const pulse = Math.sin(t * s.spd + s.ph);
+        if (pulse > 0.88) {
+          const al = (pulse - 0.88) / 0.12 * s.al;
+          const grd = ctx.createRadialGradient(s.x*W, s.y*H, 0, s.x*W, s.y*H, 3);
+          grd.addColorStop(0, `rgba(255,248,200,${al})`);
+          grd.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.beginPath(); ctx.arc(s.x*W, s.y*H, 3, 0, TWO_PI);
+          ctx.fillStyle=grd; ctx.fill();
+        }
       }
+      ctx.restore();
 
-      // ── Horizon line — faint gold at bottom ──
-      const hz = ctx.createLinearGradient(0, H*0.88, 0, H);
-      hz.addColorStop(0, "rgba(180,140,40,0.12)");
-      hz.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle=hz; ctx.fillRect(0,H*0.88,W,H*0.12);
+      // ── Ground mist — very faint haze pooling at bottom ──
+      const mist = ctx.createLinearGradient(0, H*0.82, 0, H);
+      mist.addColorStop(0, "rgba(0,0,0,0)");
+      mist.addColorStop(0.5, "rgba(160,120,30,0.06)");
+      mist.addColorStop(1,   "rgba(100, 75,15,0.10)");
+      ctx.fillStyle=mist; ctx.fillRect(0,H*0.82,W,H*0.18);
 
       t++;
       raf = requestAnimationFrame(draw);
@@ -997,8 +983,9 @@ export default function App() {
         }
         .prism:hover .prism-name,
         .prism.sel   .prism-name {
-          letter-spacing: .01em;
-          color: #000;
+          letter-spacing: .02em;
+          color: #f0e8d0;
+          filter: drop-shadow(0 0 6px rgba(212,175,90,0.45));
         }
         /* Main card — name lights up gold on hover */
         .prism.is-main:hover .prism-name,
