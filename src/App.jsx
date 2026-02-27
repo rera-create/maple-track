@@ -432,42 +432,6 @@ export default function App() {
   const [mounted,  setMounted]  = useState(false);
   const [hovered,  setHovered]  = useState(null);
   const [navPage,  setNavPage]  = useState("experience");
-  // colorA = background/surface tone, colorB = accent/gold tone
-  const [colorA,   setColorA]   = useState("#ffffff");
-  const [colorB,   setColorB]   = useState("#F0DC80");
-  const [pickerOpen, setPickerOpen] = useState(null); // "A" | "B" | null
-
-  // Derive rgba helper from a hex color
-  const hexToRgb = (hex) => {
-    const r = parseInt(hex.slice(1,3),16);
-    const g = parseInt(hex.slice(3,5),16);
-    const b = parseInt(hex.slice(5,7),16);
-    return `${r},${g},${b}`;
-  };
-
-  // Is the background dark? Used for text contrast
-  const isDark = (hex) => {
-    const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
-    return (r*299 + g*587 + b*114) / 1000 < 128;
-  };
-
-  const dark = isDark(colorA);
-
-  // Build inline CSS vars from chosen colors
-  const themeVars = {
-    "--G":           colorB,
-    "--Gr":          hexToRgb(colorB),
-    "--bg":          colorA,
-    "--card-bg":     dark ? `rgba(${hexToRgb(colorA)},0.75)` : `rgba(${hexToRgb(colorA)},0.52)`,
-    "--card-hover":  dark ? `rgba(${hexToRgb(colorA)},0.90)` : `rgba(${hexToRgb(colorA)},0.72)`,
-    "--sidebar-bg":  dark ? `rgba(${hexToRgb(colorA)},0.88)` : `rgba(${hexToRgb(colorA)},0.68)`,
-    "--border":      `rgba(${hexToRgb(colorB)},0.22)`,
-    "--text":        dark ? "#f0f0f0" : "#111111",
-    "--text-mid":    dark ? "#aaaaaa" : "#555555",
-    "--dim":         dark ? "#777777" : "#999999",
-    "--nav-active-bg":   `rgba(${hexToRgb(colorB)},0.10)`,
-    "--nav-active-text": dark ? "#ffffff" : "#111111",
-  };
 
   useEffect(() => { setTimeout(() => setMounted(true), 60); }, []);
 
@@ -725,96 +689,7 @@ export default function App() {
           background: linear-gradient(90deg, rgba(var(--Gr),0.25), transparent);
         }
 
-        /* ── Color customizer ── */
-        .color-section {
-          padding: 24px 36px 32px;
-          border-top: 1px solid rgba(var(--Gr),0.10);
-          margin-top: 16px;
-        }
-        .color-section-label {
-          font-family: var(--mono);
-          font-size: 8px;
-          letter-spacing: .28em;
-          text-transform: uppercase;
-          color: var(--dim);
-          opacity: 0.6;
-          margin-bottom: 16px;
-        }
-        .color-row {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        .color-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .color-item-label {
-          font-family: var(--mono);
-          font-size: 9px;
-          color: var(--dim);
-          letter-spacing: .12em;
-          flex: 1;
-          text-transform: uppercase;
-        }
-        /* The swatch button that opens the picker */
-        .color-swatch-btn {
-          width: 28px; height: 28px;
-          border: 1px solid rgba(var(--Gr),0.30);
-          cursor: pointer;
-          position: relative;
-          padding: 0;
-          transition: border-color .1s, transform .1s;
-          flex-shrink: 0;
-        }
-        .color-swatch-btn:hover {
-          border-color: rgba(var(--Gr),0.7);
-          transform: scale(1.08);
-        }
-        .color-swatch-btn.open {
-          border-color: var(--G);
-          box-shadow: 0 0 8px rgba(var(--Gr),0.4);
-        }
-        /* Native color input hidden behind swatch */
-        .color-native {
-          position: absolute;
-          inset: 0;
-          opacity: 0;
-          cursor: pointer;
-          width: 100%;
-          height: 100%;
-          border: none;
-          padding: 0;
-        }
-        .color-hex {
-          font-family: var(--mono);
-          font-size: 9px;
-          color: var(--dim);
-          letter-spacing: .06em;
-          min-width: 52px;
-          text-align: right;
-        }
 
-        /* Preset swatches below each picker */
-        .color-presets {
-          display: flex;
-          gap: 5px;
-          flex-wrap: wrap;
-          margin-top: 4px;
-          padding-left: 40px;
-        }
-        .color-preset {
-          width: 14px; height: 14px;
-          border: 1px solid rgba(var(--Gr),0.15);
-          cursor: pointer;
-          transition: transform .08s, border-color .08s;
-          padding: 0;
-        }
-        .color-preset:hover {
-          transform: scale(1.2);
-          border-color: rgba(var(--Gr),0.5);
-        }
 
         /* ── Right panel — cards + detail ── */
         .content {
@@ -882,10 +757,10 @@ export default function App() {
           filter: drop-shadow(0 0 4px rgba(240,220,128,.7));
         }
 
-        /* ── Prism grid — 3 columns fixed ── */
+        /* ── Prism grid — original sizing, 3 cols ── */
         .grid {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(3, minmax(0, 180px));
           column-gap: 48px;
           row-gap: 140px;
           padding-top: 120px;
@@ -1327,7 +1202,7 @@ export default function App() {
         ::-webkit-scrollbar-thumb { background: rgba(var(--Gr),0.25); }
       `}</style>
 
-      <div className="root" style={themeVars}>
+      <div className="root">
         <Background/>
 
         <div className="layout">
@@ -1390,54 +1265,7 @@ export default function App() {
                 ))}
               </nav>
 
-              {/* Color customizer */}
-              <div className="color-section">
-                <div className="color-section-label">Appearance</div>
-                <div className="color-row">
-                  {[
-                    {
-                      key: "A", label: "Surface",
-                      value: colorA, onChange: setColorA,
-                      presets: ["#ffffff","#f5f0e8","#0e0e0e","#0d1117","#1a1a2e","#0f0e17","#1c1c1c","#f0f4f8"],
-                    },
-                    {
-                      key: "B", label: "Accent",
-                      value: colorB, onChange: setColorB,
-                      presets: ["#F0DC80","#FFE566","#a8edea","#ffd6e0","#c3f0ca","#b8b8ff","#ffa07a","#e0c3fc"],
-                    },
-                  ].map(({ key, label, value, onChange, presets }) => (
-                    <div key={key}>
-                      <div className="color-item">
-                        <span className="color-item-label">{label}</span>
-                        <span className="color-hex">{value.toUpperCase()}</span>
-                        <button
-                          className={`color-swatch-btn${pickerOpen===key?" open":""}`}
-                          style={{ background: value }}
-                          onClick={() => setPickerOpen(pickerOpen===key ? null : key)}
-                        >
-                          <input
-                            type="color"
-                            className="color-native"
-                            value={value}
-                            onChange={e => onChange(e.target.value)}
-                            onFocus={() => setPickerOpen(key)}
-                            onBlur={() => setPickerOpen(null)}
-                          />
-                        </button>
-                      </div>
-                      <div className="color-presets">
-                        {presets.map(p => (
-                          <button key={p} className="color-preset"
-                            style={{ background: p }}
-                            onClick={() => onChange(p)}
-                            title={p}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+
             </div>
           </aside>
 
