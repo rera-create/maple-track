@@ -213,7 +213,7 @@ function Background() {
 }
 
 // Swap this for your R2 public bucket URL when ready
-const IMG_BASE = "https://pub-xxxx.r2.dev";
+const IMG_BASE = "https://pub-2f8b565f5d5e4601814c638f74967ba9.r2.dev";
 
 const characters = [
   { name: "Yunli",    cls: "Ren",          type: "Warrior",  level: 288, badge: "Main",         img: "ren"       },
