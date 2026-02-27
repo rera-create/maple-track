@@ -1,842 +1,974 @@
-import { useState, createContext, useContext } from "react";
+import { useState, useEffect, useRef } from "react";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Job colors
-// ─────────────────────────────────────────────────────────────────────────────
-const JOB_COLORS = {
-  Warrior:  "#e05048",
-  Thief:    "#9060d8",
-  Magician: "#3b9fd6",
-  Mage:     "#3b9fd6",
-  Pirate:   "#e09020",
-};
+// ── Animated background ───────────────────────────────────────────────────────
+function Background() {
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    let raf;
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    resize();
+    window.addEventListener("resize", resize);
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Characters
-// ─────────────────────────────────────────────────────────────────────────────
+    const TWO_PI = Math.PI * 2;
+    const G  = (a) => `rgba(240,215,110,${a})`;
+    const Gw = (a) => `rgba(255,242,168,${a})`;
+
+    // Drifting orbs — ambient warmth
+    const orbs = [
+      { x:0.18, y:0.22, vx: 0.00040, vy: 0.00028, r:0.42, ph:0.0 },
+      { x:0.78, y:0.62, vx:-0.00035, vy:-0.00025, r:0.48, ph:1.8 },
+      { x:0.52, y:0.85, vx: 0.00025, vy:-0.00038, r:0.36, ph:3.5 },
+      { x:0.88, y:0.18, vx:-0.00030, vy: 0.00036, r:0.40, ph:5.2 },
+      { x:0.32, y:0.52, vx: 0.00038, vy: 0.00020, r:0.32, ph:2.4 },
+    ];
+
+    // Ring clusters
+    const clusters = [
+      {
+        cx:0.84, cy:0.22,
+        rings:[
+          { r:130, spd: 0.0004, ticks:72, tkLen:6, al:0.18 },
+          { r:100, spd:-0.0007, ticks:36, tkLen:5, al:0.22 },
+          { r: 68, spd: 0.0012, ticks:24, tkLen:4, al:0.28 },
+          { r: 38, spd:-0.0020, ticks:12, tkLen:4, al:0.34 },
+        ],
+        scanSpd:0.0018, scanAl:0.16, scanArc:0.55, angle:0,
+      },
+      {
+        cx:0.12, cy:0.72,
+        rings:[
+          { r:110, spd:-0.0005, ticks:60, tkLen:5, al:0.16 },
+          { r: 80, spd: 0.0009, ticks:30, tkLen:5, al:0.20 },
+          { r: 50, spd:-0.0015, ticks:20, tkLen:4, al:0.26 },
+          { r: 24, spd: 0.0025, ticks:8,  tkLen:3, al:0.32 },
+        ],
+        scanSpd:-0.0022, scanAl:0.15, scanArc:0.45, angle:2.1,
+      },
+      {
+        cx:0.50, cy:0.50,
+        rings:[
+          { r:190, spd: 0.0002, ticks:90, tkLen:7, al:0.09 },
+          { r:152, spd:-0.0004, ticks:72, tkLen:6, al:0.12 },
+          { r:112, spd: 0.0006, ticks:48, tkLen:5, al:0.16 },
+          { r: 74, spd:-0.0010, ticks:36, tkLen:5, al:0.21 },
+          { r: 40, spd: 0.0016, ticks:16, tkLen:4, al:0.27 },
+        ],
+        scanSpd:0.0013, scanAl:0.12, scanArc:0.65, angle:4.5,
+      },
+    ];
+    // init ring rotations
+    clusters.forEach(cl => cl.rings.forEach(r => { r.rot = 0; }));
+
+    // Floating reticles
+    const reticles = [
+      { x:0.65, y:0.35, vx: 0.00020, vy: 0.00014, sz:18, ph:0.0 },
+      { x:0.27, y:0.14, vx:-0.00018, vy: 0.00022, sz:14, ph:1.2 },
+      { x:0.91, y:0.74, vx: 0.00015, vy:-0.00018, sz:22, ph:2.6 },
+      { x:0.42, y:0.88, vx:-0.00022, vy:-0.00012, sz:12, ph:4.1 },
+    ];
+
+    // Data streaks
+    const streaks = Array.from({length:10}, (_, i) => ({
+      y: 0.06 + i * 0.092,
+      x: Math.random(),
+      w: 0.05 + Math.random() * 0.12,
+      ph: Math.random() * TWO_PI,
+      spd: 0.00018 + Math.random() * 0.00022,
+    }));
+
+    const drawRing = (cx, cy, ring, rot) => {
+      ctx.beginPath();
+      ctx.arc(cx, cy, ring.r, 0, TWO_PI);
+      ctx.strokeStyle = G(ring.al);
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+      for (let i = 0; i < ring.ticks; i++) {
+        const angle = rot + (i / ring.ticks) * TWO_PI;
+        const major = i % (ring.ticks / 4) === 0;
+        const len = major ? ring.tkLen * 1.8 : ring.tkLen;
+        const al  = major ? Math.min(ring.al * 1.7, 1) : ring.al;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(angle) * ring.r, cy + Math.sin(angle) * ring.r);
+        ctx.lineTo(cx + Math.cos(angle) * (ring.r - len), cy + Math.sin(angle) * (ring.r - len));
+        ctx.strokeStyle = G(al);
+        ctx.lineWidth = major ? 1.2 : 0.6;
+        ctx.stroke();
+      }
+    };
+
+    const drawScan = (cx, cy, maxR, angle, arc, al) => {
+      const steps = 24;
+      for (let i = 0; i < steps; i++) {
+        const frac = i / steps;
+        const a0 = (angle - arc) + frac * arc;
+        const a1 = (angle - arc) + (frac + 1 / steps) * arc;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, maxR, a0, a1);
+        ctx.closePath();
+        ctx.fillStyle = G(al * frac * frac);
+        ctx.fill();
+      }
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(angle) * maxR, cy + Math.sin(angle) * maxR);
+      ctx.strokeStyle = Gw(al * 2.2);
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+    };
+
+    const drawReticle = (rx, ry, sz, al) => {
+      const h = sz * 0.4, gap = sz * 0.25;
+      ctx.strokeStyle = G(al);
+      ctx.lineWidth = 0.9;
+      [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sy]) => {
+        const ox = rx + sx * gap, oy = ry + sy * gap;
+        ctx.beginPath();
+        ctx.moveTo(ox + sx * h, oy);
+        ctx.lineTo(ox, oy);
+        ctx.lineTo(ox, oy + sy * h);
+        ctx.stroke();
+      });
+      ctx.beginPath();
+      ctx.arc(rx, ry, 1.5, 0, TWO_PI);
+      ctx.fillStyle = G(al * 1.6);
+      ctx.fill();
+    };
+
+    let t = 0;
+    const draw = () => {
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, W, H);
+
+      // Orbs
+      for (const o of orbs) {
+        o.x += o.vx; o.y += o.vy;
+        if (o.x < -0.2) o.vx = Math.abs(o.vx);
+        if (o.x >  1.2) o.vx =-Math.abs(o.vx);
+        if (o.y < -0.2) o.vy = Math.abs(o.vy);
+        if (o.y >  1.2) o.vy =-Math.abs(o.vy);
+        const al = 0.20 + 0.07 * Math.sin(t * 0.0006 + o.ph);
+        const cx = o.x*W, cy = o.y*H, rad = o.r * Math.max(W,H);
+        const g = ctx.createRadialGradient(cx,cy,0,cx,cy,rad);
+        g.addColorStop(0,   `rgba(240,210,100,${al})`);
+        g.addColorStop(0.4, `rgba(240,215,110,${al*0.45})`);
+        g.addColorStop(1,   "rgba(240,220,128,0)");
+        ctx.beginPath(); ctx.arc(cx,cy,rad,0,TWO_PI);
+        ctx.fillStyle = g; ctx.fill();
+      }
+
+      // Clusters
+      for (const cl of clusters) {
+        const cx = cl.cx * W, cy = cl.cy * H;
+        cl.angle += cl.scanSpd;
+        for (const ring of cl.rings) {
+          ring.rot += ring.spd;
+          drawRing(cx, cy, ring, ring.rot);
+        }
+        drawScan(cx, cy, cl.rings[0].r, cl.angle, cl.scanArc, cl.scanAl);
+        ctx.beginPath(); ctx.arc(cx, cy, 3, 0, TWO_PI);
+        ctx.fillStyle = G(0.5); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx, cy, 1.5, 0, TWO_PI);
+        ctx.fillStyle = Gw(0.9); ctx.fill();
+      }
+
+      // Streaks
+      for (const s of streaks) {
+        s.x += s.spd;
+        if (s.x > 1.3) s.x = -0.3;
+        const al = 0.07 + 0.05 * Math.sin(t * 0.002 + s.ph);
+        const sx = s.x*W, sy = s.y*H, sw = s.w*W;
+        const grad = ctx.createLinearGradient(sx,sy,sx+sw,sy);
+        grad.addColorStop(0, G(0));
+        grad.addColorStop(0.3, G(al));
+        grad.addColorStop(0.7, G(al));
+        grad.addColorStop(1, G(0));
+        ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(sx+sw,sy);
+        ctx.strokeStyle = grad; ctx.lineWidth = 0.8; ctx.stroke();
+      }
+
+      // Reticles
+      for (const re of reticles) {
+        re.x += re.vx; re.y += re.vy;
+        if (re.x < 0.02) re.vx = Math.abs(re.vx);
+        if (re.x > 0.98) re.vx =-Math.abs(re.vx);
+        if (re.y < 0.02) re.vy = Math.abs(re.vy);
+        if (re.y > 0.98) re.vy =-Math.abs(re.vy);
+        const al = 0.20 + 0.10 * Math.sin(t * 0.0012 + re.ph);
+        drawReticle(re.x*W, re.y*H, re.sz, al);
+      }
+
+      t++;
+      raf = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
+  }, []);
+
+  return <canvas ref={canvasRef} style={{position:"fixed",inset:0,width:"100%",height:"100%",zIndex:0,pointerEvents:"none"}}/>;
+}
+
 const characters = [
   { name: "Yunli",    cls: "Ren",          type: "Warrior",  level: 288, badge: "Main"  },
-  { name: "Lecia",    cls: "Hero",         type: "Warrior",  level: 287, badge: "Champ" },
-  { name: "Gremory",  cls: "Cadena",       type: "Thief",    level: 270, badge: "Champ" },
-  { name: "Guilty",   cls: "Bishop",       type: "Magician", level: 268, badge: "Champ" },
-  { name: "Iono",     cls: "Lynn",         type: "Magician", level: 263, badge: "Champ" },
-  { name: "Yutet",    cls: "Demon Slayer", type: "Warrior",  level: 262, badge: "WIP"   },
-  { name: "Kisaki",   cls: "Khali",        type: "Thief",    level: 260, badge: "WIP"   },
-  { name: "Kasel",    cls: "Kanna",        type: "Magician", level: 260, badge: "WIP"   },
-  { name: "Filene",   cls: "Fire/Poison",  type: "Mage",     level: 260, badge: "WIP"   },
-  { name: "Aijou",    cls: "Battle Mage",  type: "Magician", level: 260, badge: "WIP"   },
-  { name: "Fuyuko",   cls: "Aran",         type: "Warrior",  level: 260, badge: "WIP"   },
-  { name: "Solais",   cls: "Sia Astelle",  type: "Magician", level: 253, badge: "WIP"   },
-  { name: "Cordelia", cls: "Adele",        type: "Warrior",  level: 252, badge: "WIP"   },
-  { name: "Ramizel",  cls: "Lara",         type: "Magician", level: 251, badge: "WIP"   },
-  { name: "Yubel",    cls: "Shade",        type: "Warrior",  level: 251, badge: "WIP"   },
-  { name: "Ramuh",    cls: "Buccaneer",    type: "Pirate",   level: 250, badge: "WIP"   },
+  { name: "Lecia",    cls: "Hero",         type: "Warrior",  level: 287, badge: "Farming" },
+  { name: "Gremory",  cls: "Cadena",       type: "Thief",    level: 270, badge: "Farming" },
+  { name: "Guilty",   cls: "Bishop",       type: "Magician", level: 268, badge: "Farming" },
+  { name: "Iono",     cls: "Lynn",         type: "Magician", level: 263, badge: "Farming" },
+  { name: "Yutet",    cls: "Demon Slayer", type: "Warrior",  level: 262, badge: "In Progress"   },
+  { name: "Kisaki",   cls: "Khali",        type: "Thief",    level: 260, badge: "In Progress"   },
+  { name: "Kasel",    cls: "Kanna",        type: "Magician", level: 260, badge: "In Progress"   },
+  { name: "Filene",   cls: "Fire/Poison",  type: "Mage",     level: 260, badge: "In Progress"   },
+  { name: "Aijou",    cls: "Battle Mage",  type: "Magician", level: 260, badge: "In Progress"   },
+  { name: "Fuyuko",   cls: "Aran",         type: "Warrior",  level: 260, badge: "In Progress"   },
+  { name: "Solais",   cls: "Sia Astelle",  type: "Magician", level: 253, badge: "In Progress"   },
+  { name: "Cordelia", cls: "Adele",        type: "Warrior",  level: 252, badge: "In Progress"   },
+  { name: "Ramizel",  cls: "Lara",         type: "Magician", level: 251, badge: "In Progress"   },
+  { name: "Yubel",    cls: "Shade",        type: "Warrior",  level: 251, badge: "In Progress"   },
+  { name: "Ramuh",    cls: "Buccaneer",    type: "Pirate",   level: 250, badge: "In Progress"   },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Default palette
-// ─────────────────────────────────────────────────────────────────────────────
-const DEFAULT_THEME = {
-  id: null,
-  label: "Default",
-  bgFrom:       "#e8f4fd",
-  bgMid:        "#f0f8ff",
-  bgTo:         "#d0eaf8",
-  blobColor:    "rgba(59,159,214,0.07)",
-  gridColor:    "#dbeaf5",
-  accent:       "#3b9fd6",
-  accentL:      "#6dbfe8",
-  accentD:      "#1a6fa0",
-  cardBg:       "#ffffff",
-  cardBorder:   "#dbeaf5",
-  portraitFrom: "rgba(59,159,214,0.13)",
-  portraitTo:   "rgba(208,234,248,1)",
-  crumbAccent:  "#1a6fa0",
-  navBg:        "#ffffff",
-  diamondColor: "#3b9fd6",
-  textD:        "#1a2a3a",
-  textM:        "#4a6a80",
-  textL:        "#8aaabb",
+const TIER = {
+  Main:  { label: "Legendary", dim: "rgba(0,180,0,0.55)",    lit: "#7eff7e" },
+  Farming:        { label: "Unique",    dim: "rgba(220,160,0,0.55)",  lit: "#ffe080" },
+  "In Progress":  { label: "Epic",      dim: "rgba(160,80,255,0.55)", lit: "#c89fff" },
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Grandis theme definitions
-// ─────────────────────────────────────────────────────────────────────────────
-const GRANDIS_THEME_DEFS = {
-  "cernium": {
-    label: "Cernium", swatch: "#f0b429",
-    bgFrom:"#fffbf0", bgMid:"#fff8e1", bgTo:"#fef3c7",
-    blobColor:"rgba(240,180,41,0.08)", gridColor:"#f5e8c0",
-    accent:"#d4920a", accentL:"#f0b429", accentD:"#a06808",
-    cardBg:"#fffdf5", cardBorder:"#f0d890",
-    portraitFrom:"rgba(240,180,41,0.18)", portraitTo:"rgba(255,251,240,1)",
-    crumbAccent:"#a06808", navBg:"#fffdf5", diamondColor:"#d4920a",
-    textD:"#2a1e08", textM:"#6a4e18", textL:"#a08040",
-  },
-  "burning-cernium": {
-    label: "Burning Cernium", swatch: "#e03020",
-    bgFrom:"#1a0a08", bgMid:"#2a1010", bgTo:"#1e0c0a",
-    blobColor:"rgba(224,60,32,0.12)", gridColor:"rgba(224,100,60,0.15)",
-    accent:"#e84030", accentL:"#ff6050", accentD:"#c02818",
-    cardBg:"#251010", cardBorder:"#6a2018",
-    portraitFrom:"rgba(232,64,48,0.28)", portraitTo:"rgba(37,16,16,1)",
-    crumbAccent:"#ff7060", navBg:"#201010", diamondColor:"#e84030",
-    textD:"#ffe8e0", textM:"#e0a898", textL:"#906858",
-  },
-  "hotel-arcus": {
-    label: "Hotel Arcus", swatch: "#c8a060",
-    bgFrom:"#f8f0e0", bgMid:"#f0e4cc", bgTo:"#e8d8b8",
-    blobColor:"rgba(200,160,96,0.08)", gridColor:"#e0cca0",
-    accent:"#b86830", accentL:"#d08848", accentD:"#884020",
-    cardBg:"#fdf8f0", cardBorder:"#ddc890",
-    portraitFrom:"rgba(184,104,48,0.14)", portraitTo:"rgba(253,248,240,1)",
-    crumbAccent:"#884020", navBg:"#fdf8f0", diamondColor:"#b86830",
-    textD:"#281808", textM:"#704030", textL:"#a08060",
-  },
-  "odium": {
-    label: "Odium", swatch: "#60a8d0",
-    bgFrom:"#e8f0f8", bgMid:"#dce8f4", bgTo:"#ccdaee",
-    blobColor:"rgba(80,140,200,0.07)", gridColor:"#b8d0e8",
-    accent:"#2860a0", accentL:"#4890c8", accentD:"#184878",
-    cardBg:"#f4f8fc", cardBorder:"#b8d4ec",
-    portraitFrom:"rgba(40,96,160,0.12)", portraitTo:"rgba(244,248,252,1)",
-    crumbAccent:"#184878", navBg:"#f4f8fc", diamondColor:"#2860a0",
-    textD:"#0a1828", textM:"#304868", textL:"#708098",
-  },
-  "shangri-la": {
-    label: "Shangri-La", swatch: "#e87890",
-    bgFrom:"#fff0f4", bgMid:"#fde8f0", bgTo:"#f8dce8",
-    blobColor:"rgba(232,120,144,0.07)", gridColor:"#f8c8d8",
-    accent:"#c04870", accentL:"#e87890", accentD:"#903450",
-    cardBg:"#fff8fb", cardBorder:"#f0b8cc",
-    portraitFrom:"rgba(192,72,112,0.12)", portraitTo:"rgba(255,248,251,1)",
-    crumbAccent:"#903450", navBg:"#fff8fb", diamondColor:"#c04870",
-    textD:"#280a18", textM:"#783050", textL:"#b07888",
-  },
-  "arteria": {
-    label: "Arteria", swatch: "#6048a0",
-    bgFrom:"#0e0c14", bgMid:"#161220", bgTo:"#100e18",
-    blobColor:"rgba(96,72,160,0.14)", gridColor:"rgba(96,72,160,0.12)",
-    accent:"#8060d0", accentL:"#a080e8", accentD:"#6040a8",
-    cardBg:"#181428", cardBorder:"#3a2c60",
-    portraitFrom:"rgba(128,96,208,0.22)", portraitTo:"rgba(24,20,40,1)",
-    crumbAccent:"#b090f0", navBg:"rgba(20,16,32,0.8)", diamondColor:"#8060d0",
-    textD:"#e8e0f8", textM:"#a898d0", textL:"#685898",
-  },
-  "carcion": {
-    label: "Carcion", swatch: "#20c8b0",
-    bgFrom:"#e0faf6", bgMid:"#ccf4ee", bgTo:"#b8eee6",
-    blobColor:"rgba(32,200,176,0.09)", gridColor:"#90dcd4",
-    accent:"#0090a0", accentL:"#20c0b0", accentD:"#006878",
-    cardBg:"#f0fdfb", cardBorder:"#90d8cc",
-    portraitFrom:"rgba(0,144,160,0.14)", portraitTo:"rgba(240,253,251,1)",
-    crumbAccent:"#006878", navBg:"#f0fdfb", diamondColor:"#0090a0",
-    textD:"#082028", textM:"#206070", textL:"#609098",
-  },
-  "tallahart": {
-    label: "Tallahart", swatch: "#6070b8",
-    bgFrom:"#0c0e1a", bgMid:"#121428", bgTo:"#0e1020",
-    blobColor:"rgba(96,112,184,0.12)", gridColor:"rgba(96,112,184,0.10)",
-    accent:"#8090d0", accentL:"#a0b0e8", accentD:"#5060a0",
-    cardBg:"#141828", cardBorder:"#303860",
-    portraitFrom:"rgba(96,112,184,0.20)", portraitTo:"rgba(20,24,40,1)",
-    crumbAccent:"#b0c0f0", navBg:"rgba(16,20,32,0.8)", diamondColor:"#8090d0",
-    textD:"#e0e4f8", textM:"#9098c8", textL:"#506080",
-  },
-  "geardrak": {
-    label: "Geardrak", swatch: "#c06820",
-    bgFrom:"#100c08", bgMid:"#1a1008", bgTo:"#140e06",
-    blobColor:"rgba(192,104,32,0.12)", gridColor:"rgba(192,104,32,0.14)",
-    accent:"#d07828", accentL:"#e89848", accentD:"#a05010",
-    cardBg:"#1e1408", cardBorder:"#5a3010",
-    portraitFrom:"rgba(208,120,40,0.24)", portraitTo:"rgba(30,20,8,1)",
-    crumbAccent:"#f0a850", navBg:"rgba(24,16,8,0.8)", diamondColor:"#d07828",
-    textD:"#f8e8d0", textM:"#c09060", textL:"#806040",
-  },
+const JOB_HUE = {
+  Warrior: 350, Thief: 270, Magician: 210, Mage: 210, Pirate: 38,
 };
 
-const GRANDIS_THEMES_LIST = [
-  { id:"cernium",         label:"Cernium"        },
-  { id:"burning-cernium", label:"Burning Cernium" },
-  { id:"hotel-arcus",     label:"Hotel Arcus"     },
-  { id:"odium",           label:"Odium"           },
-  { id:"shangri-la",      label:"Shangri-La"      },
-  { id:"arteria",         label:"Arteria"         },
-  { id:"carcion",         label:"Carcion"         },
-  { id:"tallahart",       label:"Tallahart"       },
-  { id:"geardrak",        label:"Geardrak"        },
-];
+const G      = "#F0DC80";   // luminescent pale gold — the edge color
+const G_DIM  = "rgba(240,220,128,0.18)";
+const G_GLOW = "rgba(240,220,128,0.7)";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Theme context
-// ─────────────────────────────────────────────────────────────────────────────
-const ThemeCtx = createContext(DEFAULT_THEME);
-const useTheme = () => useContext(ThemeCtx);
+// A single prism card — the card face IS the monolith face
+// Gold lines the edges and optionally bisects the face vertically
+function PrismCard({ char, index, isSel, isHov, onClick, onEnter, onLeave }) {
+  const tier  = TIER[char.badge];
+  const hue   = JOB_HUE[char.type] ?? JOB_HUE.Magician;
+  const lit   = isSel || isHov;
 
-function getTheme(id) {
-  if (!id) return DEFAULT_THEME;
-  const def = GRANDIS_THEME_DEFS[id];
-  return def ? { ...DEFAULT_THEME, ...def } : DEFAULT_THEME;
-}
+  // Which cards get the center seam (every 3rd)
+  const hasSeam = index % 3 === 1;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Fixed constants (never theme-dependent)
-// ─────────────────────────────────────────────────────────────────────────────
-const GOLD   = "#f0b429";
-const GOLD_D = "#c48a10";
-
-const HALO = {
-  Main:  { inner:"#ffe066", outer:"#f0b429" },
-  Champ: { inner:"#90d0f8", outer:"#3b9fd6" },
-  WIP:   { inner:"#e0e8f0", outer:"#a0b8c8" },
-};
-
-const TYPE_COLORS = {
-  Warrior:  { bg:"#fff0f0", text:"#c03040", border:"#f8c0c8" },
-  Thief:    { bg:"#f8f0ff", text:"#7040c8", border:"#d8c0f8" },
-  Magician: { bg:"#f0f6ff", text:"#2060c0", border:"#b8d4f8" },
-  Mage:     { bg:"#f0f6ff", text:"#2060c0", border:"#b8d4f8" },
-  Pirate:   { bg:"#fff8ec", text:"#c07010", border:"#f8dca0" },
-};
-
-// Nav item icons as render functions — defined outside any component
-// so they never cause re-renders when the theme changes
-const NAV_ICON_FNS = {
-  Roster: (color) => (
-    <svg width={22} height={22} viewBox="0 0 24 24" fill="none" style={{color}}>
-      <circle cx="9"  cy="7"  r="3.5" stroke="currentColor" strokeWidth="1.8"/>
-      <circle cx="18" cy="7"  r="2.5" stroke="currentColor" strokeWidth="1.6" opacity="0.6"/>
-      <path d="M2 19.5C2 16.5 5 14 9 14s7 2.5 7 5.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-      <path d="M15 14c2 .5 4 2 4 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" opacity="0.6"/>
-    </svg>
-  ),
-  Bosses: (color) => (
-    <svg width={22} height={22} viewBox="0 0 24 24" fill="none" style={{color}}>
-      <path d="M12 3 C7 3 4 7 4 11 C4 14 6 16.5 9 17.5 L9 20 L15 20 L15 17.5 C18 16.5 20 14 20 11 C20 7 17 3 12 3Z"
-        stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
-      <circle cx="9"  cy="11" r="1.5" fill="currentColor"/>
-      <circle cx="15" cy="11" r="1.5" fill="currentColor"/>
-      <path d="M9 15 Q12 17 15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-      <path d="M6 5 L4 3 M18 5 L20 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" opacity="0.7"/>
-    </svg>
-  ),
-  Dailies: (color) => (
-    <svg width={22} height={22} viewBox="0 0 24 24" fill="none" style={{color}}>
-      <rect x="3" y="4" width="18" height="17" rx="3" stroke="currentColor" strokeWidth="1.8"/>
-      <path d="M3 9 L21 9" stroke="currentColor" strokeWidth="1.6"/>
-      <path d="M8 2 L8 6 M16 2 L16 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-      <path d="M7 13 L10 16 L17 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  ),
-  Settings: (color) => (
-    <svg width={22} height={22} viewBox="0 0 24 24" fill="none" style={{color}}>
-      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8"/>
-      <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
-        stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
-    </svg>
-  ),
-};
-
-// Static nav item metadata — no color references, resolved at render time
-const NAV_ITEMS = [
-  { label:"Roster",   colorKey:"accent", fixedColor:null    },
-  { label:"Bosses",   colorKey:null,     fixedColor:"#e05048" },
-  { label:"Dailies",  colorKey:null,     fixedColor:"#20a060" },
-  { label:"Settings", colorKey:"textM",  fixedColor:null    },
-];
-
-// ─────────────────────────────────────────────────────────────────────────────
-// BGDecor
-// ─────────────────────────────────────────────────────────────────────────────
-function BGDecor() {
-  const t = useTheme();
-  return (
-    <div style={{ position:"fixed", inset:0, zIndex:0, overflow:"hidden", pointerEvents:"none" }}>
-      {[
-        { cx:"8%",  cy:"12%", r:220 },
-        { cx:"92%", cy:"8%",  r:180 },
-        { cx:"85%", cy:"88%", r:240 },
-        { cx:"15%", cy:"80%", r:160 },
-      ].map((c,i) => (
-        <div key={i} style={{
-          position:"absolute",
-          left:`calc(${c.cx} - ${c.r}px)`, top:`calc(${c.cy} - ${c.r}px)`,
-          width:c.r*2, height:c.r*2, borderRadius:"50%",
-          background:t.blobColor,
-          transition:"background 0.5s ease",
-        }}/>
-      ))}
-      <svg style={{ position:"absolute", inset:0, width:"100%", height:"100%", opacity:0.4 }}>
-        <defs>
-          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 0 0 40" fill="none" stroke={t.gridColor} strokeWidth="0.5"/>
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#grid)"/>
-      </svg>
-      {[
-        { x:"4%",  y:"30%", size:8  },
-        { x:"96%", y:"20%", size:6  },
-        { x:"2%",  y:"70%", size:10 },
-        { x:"97%", y:"65%", size:7  },
-        { x:"50%", y:"3%",  size:5  },
-      ].map((d,i) => (
-        <div key={i} style={{
-          position:"absolute", left:d.x, top:d.y,
-          width:d.size, height:d.size,
-          border:`1.5px solid ${t.diamondColor}`,
-          transform:"rotate(45deg)", opacity:0.15,
-          transition:"border-color 0.5s ease",
-        }}/>
-      ))}
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TopNav
-// ─────────────────────────────────────────────────────────────────────────────
-function TopNav({ filter, setFilter, sortBy, setSortBy }) {
-  const t = useTheme();
-  const tabs = ["All", "Main", "Champ", "WIP"];
-  return (
-    <div style={{ position:"relative", zIndex:20, width:"100%", maxWidth:900, marginBottom:20 }}>
-      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-        <div style={{
-          width:4, height:20,
-          background:`linear-gradient(180deg, ${t.accent}, ${t.accentD})`,
-          borderRadius:2, transition:"background 0.4s",
-        }}/>
-        <span style={{ fontSize:10, fontWeight:800, color:t.crumbAccent, letterSpacing:"0.18em", textTransform:"uppercase", transition:"color 0.4s" }}>
-          Maple World
-        </span>
-        <span style={{ fontSize:10, color:t.textL, transition:"color 0.4s" }}>›</span>
-        <span style={{ fontSize:10, color:t.textM, letterSpacing:"0.08em", transition:"color 0.4s" }}>Character Roster</span>
-      </div>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <div style={{
-          display:"flex", gap:4, background:t.navBg, borderRadius:10, padding:3,
-          boxShadow:"0 2px 8px rgba(0,0,0,0.08)", border:`1px solid ${t.cardBorder}`,
-          transition:"background 0.4s, border-color 0.4s",
-        }}>
-          {tabs.map(tab => (
-            <button key={tab} onClick={() => setFilter(tab)} style={{
-              padding:"6px 16px", borderRadius:8, border:"none", cursor:"pointer",
-              fontSize:11, fontWeight: filter===tab ? 700 : 500,
-              background: filter===tab ? `linear-gradient(135deg, ${t.accent}, ${t.accentD})` : "transparent",
-              color: filter===tab ? "#fff" : t.textM,
-              transition:"all 0.18s ease",
-              boxShadow: filter===tab ? `0 2px 8px ${t.accent}44` : "none",
-            }}>{tab}</button>
-          ))}
-        </div>
-        <div style={{
-          display:"flex", alignItems:"center", gap:8, background:t.navBg, borderRadius:8, padding:"6px 12px",
-          border:`1px solid ${t.cardBorder}`, boxShadow:"0 2px 6px rgba(0,0,0,0.06)",
-          transition:"background 0.4s, border-color 0.4s",
-        }}>
-          <span style={{ fontSize:10, color:t.textL, transition:"color 0.4s" }}>Sort</span>
-          {["Level","Name"].map(s => (
-            <button key={s} onClick={() => setSortBy(s)} style={{
-              fontSize:10, padding:"3px 10px", borderRadius:6,
-              border:"none", cursor:"pointer",
-              fontWeight: sortBy===s ? 700 : 400,
-              background: sortBy===s ? t.cardBorder : "transparent",
-              color: sortBy===s ? t.accentD : t.textL,
-              transition:"all 0.15s",
-            }}>{s}</button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HaloRing
-// ─────────────────────────────────────────────────────────────────────────────
-function HaloRing({ badge, size }) {
-  const h = HALO[badge];
-  const r = size / 2 - 3;
-  const cx = size / 2;
-  const id = `halo-${badge}-${size}`;
-  return (
-    <svg width={size} height={size} style={{ position:"absolute", inset:0, zIndex:2 }}>
-      <defs>
-        <radialGradient id={id} cx="50%" cy="50%">
-          <stop offset="70%"  stopColor={h.inner} stopOpacity="0"/>
-          <stop offset="88%"  stopColor={h.inner} stopOpacity="0.6"/>
-          <stop offset="100%" stopColor={h.outer} stopOpacity="1"/>
-        </radialGradient>
-      </defs>
-      <circle cx={cx} cy={cx} r={r+2} fill="none" stroke={h.outer} strokeWidth="4" opacity="0.2"/>
-      <circle cx={cx} cy={cx} r={r}   fill={`url(#${id})`}/>
-      <circle cx={cx} cy={cx} r={r-1} fill="none" stroke={h.inner} strokeWidth="1" opacity="0.5"/>
-    </svg>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CharCard
-// ─────────────────────────────────────────────────────────────────────────────
-function CharCard({ char, index }) {
-  const [hovered, setHovered] = useState(false);
-  const t = useTheme();
-  const jobColor  = JOB_COLORS[char.type] || t.accent;
-  const typeStyle = TYPE_COLORS[char.type] || TYPE_COLORS.Magician;
-  const isMain    = char.badge === "Main";
-
-  const badgeInfo = {
-    Main:  { label:"Main",        color:GOLD,     bg:`${GOLD}18`,     border:`${GOLD}44`     },
-    Champ: { label:"Champion",    color:t.accent,  bg:`${t.accent}12`, border:`${t.accent}44` },
-    WIP:   { label:"In Progress", color:t.textL,   bg:t.cardBorder,    border:t.cardBorder    },
-  }[char.badge];
+  const edgeOpacity  = lit ? 1   : 0.22;
+  const glowStrength = lit ? "drop-shadow(0 0 4px rgba(240,220,128,0.9)) drop-shadow(0 0 12px rgba(240,220,128,0.5))" : "none";
 
   return (
     <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        width:155, borderRadius:16,
-        background:t.cardBg,
-        border:`1.5px solid ${hovered ? t.accentL : t.cardBorder}`,
-        boxShadow: hovered
-          ? `0 12px 32px ${t.accent}30, 0 2px 8px rgba(0,0,0,0.10)`
-          : `0 2px 12px rgba(0,0,0,0.08)`,
-        transform: hovered ? "translateY(-6px)" : "translateY(0)",
-        transition:"all 0.22s cubic-bezier(0.34,1.56,0.64,1), background 0.4s, border-color 0.3s",
-        animation:`card-rise 0.4s cubic-bezier(0.34,1.56,0.64,1) ${index*0.04+0.05}s both`,
-        cursor:"pointer", overflow:"hidden", position:"relative",
-      }}
+      className={`prism ${isSel ? "sel" : ""}`}
+      style={{ animationDelay: `${index * 0.03 + 0.06}s` }}
+      onClick={onClick}
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
     >
-      <div style={{
-        height:130, position:"relative",
-        background:`linear-gradient(155deg, ${t.portraitFrom} 0%, ${jobColor}10 50%, ${t.portraitTo} 100%)`,
-        overflow:"hidden", transition:"background 0.4s",
-      }}>
-        <div style={{
-          position:"absolute", bottom:0, right:0, width:0, height:0,
-          borderStyle:"solid", borderWidth:"0 0 28px 28px",
-          borderColor:`transparent transparent ${t.cardBg} transparent`,
-          zIndex:5, transition:"border-color 0.4s",
-        }}/>
-        <div style={{
-          position:"absolute", top:0, right:0, width:5, height:"100%",
-          background:`linear-gradient(180deg, ${jobColor}, ${jobColor}44)`, zIndex:4,
-        }}/>
-        <svg style={{ position:"absolute", inset:0, width:"100%", height:"100%", opacity:0.06 }}>
-          <defs>
-            <pattern id={`diag-${index}`} width="12" height="12"
-              patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-              <line x1="0" y1="0" x2="0" y2="12" stroke={jobColor} strokeWidth="3"/>
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill={`url(#diag-${index})`}/>
-        </svg>
-        <div style={{
-          position:"absolute", inset:0,
-          background:`linear-gradient(135deg, ${t.accent}0a 0%, transparent 60%)`,
-          zIndex:1, transition:"background 0.4s",
-        }}/>
-        <div style={{
-          position:"absolute",
-          bottom: isMain ? 10 : 8, left:"50%", transform:"translateX(-50%)",
-          width: isMain ? 80 : 68, height: isMain ? 80 : 68, zIndex:3,
-        }}>
-          <HaloRing badge={char.badge} size={isMain ? 80 : 68}/>
-          <div style={{
-            position:"absolute", inset: isMain ? 6 : 5, borderRadius:"50%",
-            background:`linear-gradient(135deg, ${jobColor}cc, ${jobColor}66)`,
-            display:"flex", alignItems:"center", justifyContent:"center",
-            fontSize: isMain ? 18 : 15, fontWeight:800, color:"#fff",
-            textShadow:"0 1px 4px rgba(0,0,0,0.2)",
-            boxShadow:`inset 0 2px 8px rgba(0,0,0,0.15), 0 0 0 2px ${t.cardBg}`,
-            transition:"box-shadow 0.4s",
-          }}>{char.name[0]}</div>
-        </div>
-        {isMain && (
-          <div style={{
-            position:"absolute", top:8, right:10, zIndex:4,
-            background:`linear-gradient(135deg, ${GOLD}, ${GOLD_D})`,
-            color:"#fff", fontSize:7, fontWeight:800,
-            padding:"3px 8px", borderRadius:4, letterSpacing:"0.12em",
-            boxShadow:`0 2px 6px ${GOLD}66`,
-          }}>MAIN</div>
-        )}
-      </div>
+      {/* ── Edge geometry — SVG overlay traces the prism edges ── */}
+      <svg className="edges" viewBox="0 0 100 160" preserveAspectRatio="none">
+        <defs>
+          <filter id={`eg${index}`} x="-40%" y="-10%" width="180%" height="120%">
+            <feGaussianBlur stdDeviation={lit ? "2" : "0.5"} result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
 
-      <div style={{ padding:"10px 12px 12px" }}>
-        <div style={{
-          fontSize: isMain ? 14 : 13, fontWeight:800, color:t.textD,
-          letterSpacing:"0.01em", marginBottom:2,
-          whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis",
-          transition:"color 0.4s",
-        }}>{char.name}</div>
-        <div style={{
-          fontSize:10, color:t.textL, marginBottom:8,
-          whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis",
-          transition:"color 0.4s",
-        }}>{char.cls}</div>
-        <div style={{ display:"flex", gap:4, marginBottom:9 }}>
-          <span style={{
-            fontSize:9, fontWeight:700, padding:"2px 8px", borderRadius:20,
-            background:typeStyle.bg, color:typeStyle.text, border:`1px solid ${typeStyle.border}`,
-            letterSpacing:"0.04em",
-          }}>{char.type}</span>
+        {/* Four bounding edges of the prism face */}
+        {/* Left edge — full height, primary structural line */}
+        <line x1="0" y1="0" x2="0" y2="160"
+          stroke={G} strokeWidth={lit ? "1.5" : "0.8"}
+          opacity={edgeOpacity}
+          filter={`url(#eg${index})`}
+          style={{ transition: "opacity .35s ease, stroke-width .35s ease" }}
+        />
+        {/* Top edge */}
+        <line x1="0" y1="0" x2="100" y2="0"
+          stroke={G} strokeWidth={lit ? "1.2" : "0.7"}
+          opacity={edgeOpacity * 0.85}
+          filter={`url(#eg${index})`}
+          style={{ transition: "opacity .35s ease, stroke-width .35s ease" }}
+        />
+        {/* Right edge — subtler, suggests depth */}
+        <line x1="100" y1="0" x2="100" y2="160"
+          stroke={G} strokeWidth={lit ? "0.9" : "0.5"}
+          opacity={edgeOpacity * 0.6}
+          filter={`url(#eg${index})`}
+          style={{ transition: "opacity .35s ease, stroke-width .35s ease" }}
+        />
+        {/* Bottom edge */}
+        <line x1="0" y1="160" x2="100" y2="160"
+          stroke={G} strokeWidth={lit ? "1.0" : "0.6"}
+          opacity={edgeOpacity * 0.7}
+          filter={`url(#eg${index})`}
+          style={{ transition: "opacity .35s ease, stroke-width .35s ease" }}
+        />
+
+        {/* Corner nodes — where edges meet */}
+        {[[0,0],[100,0],[0,160],[100,160]].map(([cx,cy],i) => (
+          <rect key={i}
+            x={cx === 0 ? 0 : cx - 3} y={cy === 0 ? 0 : cy - 3}
+            width="3" height="3"
+            fill={G}
+            opacity={lit ? 0.95 : 0.25}
+            filter={lit ? `url(#eg${index})` : undefined}
+            style={{ transition: "opacity .35s ease" }}
+          />
+        ))}
+
+        {/* Center vertical seam — runs down the middle of the face */}
+        {hasSeam && (
+          <line x1="50" y1="0" x2="50" y2="160"
+            stroke={G} strokeWidth={lit ? "0.7" : "0.3"}
+            opacity={lit ? 0.45 : 0.08}
+            filter={`url(#eg${index})`}
+            strokeDasharray={lit ? "none" : "4 6"}
+            style={{ transition: "opacity .35s ease, stroke-width .35s ease" }}
+          />
+        )}
+
+        {/* Horizontal divider — one third down, separates avatar zone */}
+        <line x1="0" y1="72" x2="100" y2="72"
+          stroke={G} strokeWidth={lit ? "0.8" : "0.4"}
+          opacity={lit ? 0.50 : 0.10}
+          filter={`url(#eg${index})`}
+          style={{ transition: "opacity .35s ease, stroke-width .35s ease" }}
+        />
+        {/* Node on the divider — left side */}
+        <rect x="0" y="70" width="3" height="3"
+          fill={G} opacity={lit ? 0.8 : 0.15}
+          filter={lit ? `url(#eg${index})` : undefined}
+          style={{ transition: "opacity .35s ease" }}
+        />
+      </svg>
+
+      {/* ── Inner glow: the prism radiates light from within ── */}
+      <div className="prism-glow" style={{
+        background: `radial-gradient(ellipse 80% 60% at 50% 35%,
+          rgba(240,220,128,${lit ? "0.07" : "0.02"}) 0%, transparent 70%)`,
+        transition: "background .4s ease",
+      }}/>
+
+      {/* ── Card content ── */}
+      <div className="prism-body">
+
+        {/* Upper zone — avatar */}
+        <div className="prism-upper">
+          <div className="prism-av"
+            style={{ background: `hsl(${hue}deg 45% 38%)` }}>
+            {char.name[0]}
+          </div>
         </div>
-        <div style={{ height:1, background:t.cardBorder, marginBottom:8, transition:"background 0.4s" }}/>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <div style={{ display:"flex", alignItems:"baseline", gap:3 }}>
-            <span style={{ fontSize:8, color:t.textL, letterSpacing:"0.08em", textTransform:"uppercase", transition:"color 0.4s" }}>Lv.</span>
-            <span style={{
-              fontSize:16, fontWeight:800,
-              color: hovered ? t.accent : t.textD,
-              lineHeight:1, transition:"color 0.2s",
+
+        {/* Lower zone — data */}
+        <div className="prism-lower">
+          <div className="prism-tier" style={{
+            color: lit ? tier.lit : tier.dim,
+            filter: lit ? `drop-shadow(0 0 5px ${tier.lit})` : "none",
+            transition: "color .3s, filter .3s",
+          }}>
+            {tier.label}
+          </div>
+          <div className="prism-name">{char.name}</div>
+          <div className="prism-cls">{char.cls}</div>
+          <div className="prism-lv">
+            <span className="prism-lv-l">Lv</span>
+            <span className="prism-lv-n" style={{
+              color: lit ? G : "#1a1a1a",
+              filter: lit ? `drop-shadow(0 0 8px ${G_GLOW})` : "none",
+              transition: "color .3s, filter .3s",
             }}>{char.level}</span>
           </div>
-          <div style={{
-            fontSize:8, fontWeight:700, padding:"2px 8px", borderRadius:12,
-            background:badgeInfo.bg, color:badgeInfo.color, border:`1px solid ${badgeInfo.border}`,
-            letterSpacing:"0.06em",
-          }}>{badgeInfo.label}</div>
         </div>
       </div>
-
-      <div style={{
-        height:3,
-        background:`linear-gradient(90deg, ${jobColor}, ${t.accent}66, ${jobColor}22)`,
-        opacity: hovered ? 1 : 0.5,
-        transition:"opacity 0.2s, background 0.4s",
-      }}/>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// NavIcons
-// ─────────────────────────────────────────────────────────────────────────────
-function NavIcons({ activeThemeId, setActiveThemeId }) {
-  const [activeIdx, setActiveIdx] = useState(0);
-  const [themeOpen, setThemeOpen] = useState(false);
-  const t = useTheme();
+export default function CharSelect() {
+  const [filter,   setFilter]  = useState("All");
+  const [selected, setSelected] = useState(null);
+  const [mounted,  setMounted]  = useState(false);
+  const [hovered,  setHovered]  = useState(null);
 
-  const handleSelect = (id) => {
-    setActiveThemeId(id);
-    setThemeOpen(false);
-  };
+  useEffect(() => { setTimeout(() => setMounted(true), 60); }, []);
+
+  const filtered = characters.filter(c => filter === "All" || c.badge === filter);
+  const sel = selected;
 
   return (
-    <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap');
 
-      {/* Themes dropdown */}
-      <div style={{ position:"relative" }}>
-        <button
-          onClick={() => setThemeOpen(o => !o)}
-          style={{
-            display:"flex", flexDirection:"column", alignItems:"center", gap:4,
-            padding:"8px 12px", borderRadius:12,
-            border:`1.5px solid ${themeOpen ? t.accentL : t.cardBorder}`,
-            cursor:"pointer",
-            background: themeOpen ? `${t.accent}18` : t.navBg,
-            color: themeOpen ? t.accent : t.textL,
-            boxShadow: themeOpen ? `0 4px 16px ${t.accent}22` : "0 2px 8px rgba(0,0,0,0.07)",
-            transition:"all 0.18s ease",
-            minWidth:52,
-          }}
-        >
-          <svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8"/>
-            <circle cx="9"  cy="9"  r="1.5" fill="currentColor"/>
-            <circle cx="15" cy="9"  r="1.5" fill="#e05048"/>
-            <circle cx="9"  cy="15" r="1.5" fill="#20a060"/>
-            <circle cx="15" cy="15" r="1.5" fill="#9060d8"/>
-            <circle cx="12" cy="7"  r="1.2" fill="#e09020"/>
-          </svg>
-          <span style={{
-            fontSize:8, fontWeight: themeOpen ? 700 : 500,
-            letterSpacing:"0.06em", textTransform:"uppercase", lineHeight:1,
-            color: themeOpen ? t.accent : t.textL, transition:"color 0.18s",
-          }}>Theme</span>
-          {activeThemeId !== null && (
-            <div style={{
-              position:"absolute", top:4, right:4,
-              width:6, height:6, borderRadius:"50%",
-              background:t.accent, boxShadow:`0 0 6px ${t.accent}`,
-            }}/>
-          )}
-        </button>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-        {themeOpen && (
-          <div style={{
-            position:"absolute", top:"calc(100% + 8px)", left:0,
-            background:t.cardBg, border:`1.5px solid ${t.cardBorder}`,
-            borderRadius:14,
-            boxShadow:`0 8px 28px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08)`,
-            overflow:"hidden", zIndex:100, minWidth:180,
-            animation:"dropdown-open 0.18s cubic-bezier(0.34,1.56,0.64,1) both",
-          }}>
-            <div style={{
-              padding:"8px 12px 6px", borderBottom:`1px solid ${t.cardBorder}`,
-              fontSize:8, fontWeight:700, color:t.textL,
-              letterSpacing:"0.12em", textTransform:"uppercase",
-            }}>Grandis Area</div>
+        :root {
+          --G:    #F0DC80;
+          --Gdim: rgba(240,220,128,0.18);
+          --Glo:  rgba(240,220,128,0.65);
+          --text: #111;
+          --dim:  #999;
+          --mono: 'DM Mono', monospace;
+        }
 
-            {/* Default */}
-            <button
-              onClick={() => handleSelect(null)}
-              style={{
-                display:"flex", alignItems:"center", gap:10,
-                width:"100%", padding:"8px 12px",
-                border:"none", cursor:"pointer", textAlign:"left",
-                background: activeThemeId === null ? `${t.accent}14` : "transparent",
-                borderBottom:`1px solid ${t.cardBorder}`,
-                transition:"background 0.14s",
-              }}
-            >
-              <div style={{
-                width:10, height:10, borderRadius:3, flexShrink:0,
-                background: activeThemeId === null ? t.accent : t.cardBorder,
-                border:`1px solid ${activeThemeId === null ? t.accentD : t.textL}33`,
-              }}/>
-              <span style={{
-                fontSize:11, fontWeight: activeThemeId === null ? 700 : 400,
-                color: activeThemeId === null ? t.accentD : t.textD,
-                fontStyle:"italic",
-              }}>Default</span>
-              {activeThemeId === null && (
-                <svg width={12} height={12} viewBox="0 0 12 12" style={{ marginLeft:"auto", flexShrink:0 }}>
-                  <path d="M2 6 L5 9 L10 3" stroke={t.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                </svg>
-              )}
-            </button>
+        html, body { background: #fff; }
+        body {
+          font-family: 'DM Sans', sans-serif;
+          -webkit-font-smoothing: antialiased;
+          color: var(--text);
+        }
 
-            {GRANDIS_THEMES_LIST.map(theme => {
-              const isSelected = activeThemeId === theme.id;
-              const swatchColor = GRANDIS_THEME_DEFS[theme.id]?.swatch || t.accent;
-              return (
-                <button key={theme.id}
-                  onClick={() => handleSelect(theme.id)}
-                  style={{
-                    display:"flex", alignItems:"center", gap:10,
-                    width:"100%", padding:"8px 12px",
-                    border:"none", cursor:"pointer", textAlign:"left",
-                    background: isSelected ? `${t.accent}14` : "transparent",
-                    transition:"background 0.14s",
-                  }}
-                >
-                  <div style={{
-                    width:10, height:10, borderRadius:3, flexShrink:0,
-                    background: swatchColor,
-                    border:`1px solid ${swatchColor}88`,
-                    boxShadow: isSelected ? `0 0 6px ${swatchColor}88` : "none",
-                  }}/>
-                  <span style={{
-                    fontSize:11, fontWeight: isSelected ? 700 : 400,
-                    color: isSelected ? t.accentD : t.textD,
-                    letterSpacing:"0.01em",
-                  }}>{theme.label}</span>
-                  {isSelected && (
-                    <svg width={12} height={12} viewBox="0 0 12 12" style={{ marginLeft:"auto", flexShrink:0 }}>
-                      <path d="M2 6 L5 9 L10 3" stroke={t.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                    </svg>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+        /* Root transparent so canvas orbs show through */
+        .root {
+          min-height: 100vh;
+          background: transparent;
+          position: relative;
+          z-index: 1;
+        }
 
-      {/* Divider */}
-      <div style={{ width:1, height:40, background:t.cardBorder, flexShrink:0, transition:"background 0.4s" }}/>
+        /* ── Header — frosted glass ── */
+        .hdr {
+          padding: 48px 56px 40px;
+          border-bottom: 1px solid rgba(240,220,128,0.20);
+          position: relative;
+          opacity: 0; transform: translateY(-8px);
+          transition: opacity .5s ease, transform .5s ease;
+          background: rgba(255,255,255,0.70);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+        }
+        .hdr.in { opacity: 1; transform: translateY(0); }
 
-      {/* Nav buttons */}
-      <div style={{
-        display:"flex", gap:4, alignItems:"center",
-        background:t.navBg, border:`1.5px solid ${t.cardBorder}`,
-        borderRadius:16, padding:"6px 8px",
-        boxShadow:"0 2px 12px rgba(0,0,0,0.07)",
-        transition:"background 0.4s, border-color 0.4s",
-      }}>
-        {NAV_ITEMS.map((item, i) => {
-          const isActive   = activeIdx === i;
-          const itemColor  = item.fixedColor || t[item.colorKey] || t.accent;
-          const iconColor  = isActive ? itemColor : t.textL;
-          return (
-            <button
-              key={item.label}
-              onClick={() => setActiveIdx(i)}
-              title={item.label}
-              style={{
-                display:"flex", flexDirection:"column", alignItems:"center", gap:4,
-                padding:"7px 10px", borderRadius:12,
-                border:"none", cursor:"pointer",
-                background: isActive ? `${itemColor}14` : "transparent",
-                color: iconColor,
-                transition:"all 0.18s ease",
-                position:"relative", minWidth:46,
-              }}
-              onMouseEnter={e => {
-                if (!isActive) e.currentTarget.style.background = `${itemColor}0a`;
-                e.currentTarget.style.color = itemColor;
-              }}
-              onMouseLeave={e => {
-                if (!isActive) e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.color = iconColor;
-              }}
-            >
-              {isActive && (
-                <div style={{
-                  position:"absolute", top:3, left:"50%", transform:"translateX(-50%)",
-                  width:4, height:4, borderRadius:"50%",
-                  background:itemColor, boxShadow:`0 0 6px ${itemColor}`,
-                }}/>
-              )}
-              <div style={{ marginTop: isActive ? 5 : 0, transition:"margin 0.18s" }}>
-                {NAV_ICON_FNS[item.label](iconColor)}
+        /* The single gold line at the bottom of the header — the monolith's horizon */
+        .hdr::after {
+          content: '';
+          position: absolute;
+          bottom: -1px; left: 56px; right: 56px;
+          height: 1px;
+          background: linear-gradient(90deg,
+            transparent,
+            rgba(240,220,128,0.5) 15%,
+            rgba(240,220,128,1)   50%,
+            rgba(240,220,128,0.5) 85%,
+            transparent);
+          filter: drop-shadow(0 0 8px rgba(240,220,128,0.9));
+        }
+
+        .hdr-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+        }
+
+        .hdr-name {
+          font-family: 'Bebas Neue', sans-serif;
+          font-size: 52px;
+          letter-spacing: .08em;
+          line-height: 1;
+          color: #0a0a0a;
+          /* Very faint warm shadow — like light beneath the letters */
+          text-shadow: 0 0 60px rgba(240,220,128,0.20);
+        }
+
+        .hdr-sub {
+          font-family: var(--mono);
+          font-size: 9px;
+          letter-spacing: .26em;
+          text-transform: uppercase;
+          color: rgba(240,220,128,0.8);
+          filter: drop-shadow(0 0 6px rgba(240,220,128,0.6));
+          margin-top: 8px;
+        }
+
+        .hdr-right {
+          text-align: right;
+          padding-bottom: 4px;
+        }
+        .hdr-online {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 7px;
+          font-family: var(--mono);
+          font-size: 9px;
+          letter-spacing: .18em;
+          text-transform: uppercase;
+          color: var(--dim);
+          margin-bottom: 6px;
+        }
+        .hdr-dot {
+          width: 5px; height: 5px;
+          background: #6ee7b7;
+          box-shadow: 0 0 5px #6ee7b7, 0 0 12px rgba(110,231,183,.4);
+          animation: pulse 2.5s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%,100%{opacity:1} 55%{opacity:.3} }
+        .hdr-count {
+          font-family: var(--mono);
+          font-size: 11px;
+          color: var(--dim);
+        }
+        .hdr-count strong {
+          color: var(--G);
+          font-weight: 500;
+          filter: drop-shadow(0 0 5px rgba(240,220,128,.6));
+        }
+
+        /* ── Page body ── */
+        .body {
+          max-width: 1080px;
+          margin: 0 auto;
+          padding: 36px 56px 80px;
+          opacity: 0; transform: translateY(6px);
+          transition: opacity .45s .08s ease, transform .45s .08s ease;
+        }
+        .body.in { opacity:1; transform:translateY(0); }
+
+        /* ── Filter bar ── */
+        .bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 28px;
+        }
+
+        .filters {
+          display: flex;
+          gap: 0;
+          border: 1px solid rgba(240,220,128,0.22);
+          position: relative;
+        }
+        .fbtn {
+          padding: 8px 26px;
+          border: none;
+          border-right: 1px solid rgba(240,220,128,0.14);
+          font-family: var(--mono);
+          font-size: 9px;
+          letter-spacing: .22em;
+          text-transform: uppercase;
+          cursor: pointer;
+          background: transparent;
+          color: #bbb;
+          transition: color .14s, background .14s;
+          position: relative;
+        }
+        .fbtn:last-child { border-right: none; }
+        .fbtn:hover { color: #666; background: rgba(240,220,128,0.04); }
+        .fbtn.on {
+          color: #111;
+          background: rgba(240,220,128,0.07);
+        }
+        .fbtn.on::after {
+          content: '';
+          position: absolute;
+          left: 0; right: 0; bottom: -1px;
+          height: 1.5px;
+          background: var(--G);
+          filter: drop-shadow(0 0 5px var(--G));
+        }
+
+        .bar-ct {
+          font-family: var(--mono);
+          font-size: 9px;
+          color: #ccc;
+          letter-spacing: .12em;
+        }
+        .bar-ct strong {
+          color: var(--G);
+          font-weight: 400;
+          filter: drop-shadow(0 0 4px rgba(240,220,128,.7));
+        }
+
+        /* ── Prism grid — tall narrow cards ── */
+        .grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+          gap: 14px;
+        }
+
+        /* ── Prism card ── */
+        .prism {
+          position: relative;
+          background: rgba(255,255,255,0.52);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border: 1px solid rgba(240,220,128,0.18);
+          cursor: pointer;
+          overflow: hidden;
+          opacity: 0;
+          animation: rise .38s ease forwards;
+          transition: border-color .28s ease, box-shadow .28s ease, transform .22s ease;
+        }
+        @keyframes rise {
+          from { opacity:0; transform:translateY(10px); }
+          to   { opacity:1; transform:translateY(0); }
+        }
+        .prism:hover, .prism.sel {
+          background: rgba(255,255,255,0.72);
+          border-color: rgba(240,220,128,0.55);
+          box-shadow:
+            inset 0 0 60px rgba(240,220,128,0.06),
+            0 0 0 1px rgba(240,220,128,0.14),
+            0 8px 32px rgba(240,220,128,0.12);
+          transform: translateY(-3px);
+        }
+
+        /* SVG edge overlay — fills the card exactly */
+        .edges {
+          position: absolute;
+          inset: 0; width: 100%; height: 100%;
+          pointer-events: none;
+          z-index: 2;
+        }
+
+        /* Radial inner glow — the energy inside the monolith */
+        .prism-glow {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        /* Content sits above everything */
+        .prism-body {
+          position: relative;
+          z-index: 3;
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+        }
+
+        /* Upper zone — avatar area, taller */
+        .prism-upper {
+          padding: 22px 0 18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          /* Height matches the horizontal divider at 72/160 of SVG */
+          flex: 0 0 auto;
+        }
+
+        /* Avatar — simple circle, no octagon, the monolith doesn't decorate */
+        .prism-av {
+          width: 46px; height: 46px;
+          border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-family: 'Bebas Neue', sans-serif;
+          font-size: 22px;
+          letter-spacing: .04em;
+          color: rgba(255,255,255,0.88);
+        }
+
+        /* Lower zone — text data */
+        .prism-lower {
+          padding: 14px 12px 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .prism-tier {
+          font-family: var(--mono);
+          font-size: 7.5px;
+          letter-spacing: .22em;
+          text-transform: uppercase;
+          margin-bottom: 4px;
+        }
+
+        .prism-name {
+          font-size: 13px;
+          font-weight: 500;
+          letter-spacing: -.01em;
+          color: #111;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .prism-cls {
+          font-family: var(--mono);
+          font-size: 8.5px;
+          color: #bbb;
+          letter-spacing: .04em;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          margin-bottom: 10px;
+        }
+
+        .prism-lv {
+          display: flex;
+          align-items: baseline;
+          gap: 3px;
+        }
+        .prism-lv-l {
+          font-family: var(--mono);
+          font-size: 8px;
+          color: #ccc;
+          letter-spacing: .14em;
+          text-transform: uppercase;
+        }
+        .prism-lv-n {
+          font-family: 'Bebas Neue', sans-serif;
+          font-size: 26px;
+          line-height: 1;
+          letter-spacing: .04em;
+        }
+
+        /* ── Detail panel ── */
+        .det-wrap {
+          margin-top: 10px;
+          opacity: 0; transform: translateY(5px);
+          transition: opacity .22s ease, transform .22s ease;
+          pointer-events: none;
+        }
+        .det-wrap.vis { opacity:1; transform:translateY(0); pointer-events:auto; }
+
+        .det {
+          border: 1px solid rgba(240,220,128,0.45);
+          background: rgba(255,255,255,0.65);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+          position: relative;
+          overflow: hidden;
+          box-shadow:
+            inset 0 0 80px rgba(240,220,128,0.04),
+            0 0 0 1px rgba(240,220,128,0.10);
+        }
+
+        /* Top beam */
+        .det-beam {
+          height: 1.5px;
+          background: linear-gradient(90deg,
+            transparent,
+            rgba(240,220,128,0.4) 10%,
+            rgba(240,220,128,1) 50%,
+            rgba(240,220,128,0.4) 90%,
+            transparent);
+          filter: drop-shadow(0 0 8px rgba(240,220,128,1));
+        }
+
+        /* Vertical left edge inside detail panel */
+        .det-edge {
+          position: absolute;
+          top: 0; bottom: 0; left: 0;
+          width: 1.5px;
+          background: linear-gradient(180deg,
+            rgba(240,220,128,0.8),
+            rgba(240,220,128,0.3) 50%,
+            rgba(240,220,128,0.6));
+          filter: drop-shadow(0 0 4px rgba(240,220,128,0.8));
+        }
+
+        .det-body {
+          display: flex;
+          align-items: center;
+          gap: 22px;
+          padding: 18px 28px 18px 32px;
+          position: relative; z-index: 2;
+        }
+
+        .det-av {
+          width: 52px; height: 52px;
+          border-radius: 50%;
+          display: flex; align-items:center; justify-content:center;
+          font-family: 'Bebas Neue', sans-serif;
+          font-size: 22px; letter-spacing: .04em;
+          color: rgba(255,255,255,0.88);
+          flex-shrink: 0;
+          box-shadow: 0 0 0 1.5px rgba(240,220,128,0.5),
+                      0 0 12px rgba(240,220,128,0.2);
+        }
+
+        .det-info { flex:1; min-width:0; }
+        .det-name {
+          font-family: 'Bebas Neue', sans-serif;
+          font-size: 26px; letter-spacing: .06em;
+          color: #0a0a0a; line-height:1;
+          margin-bottom: 4px;
+          text-shadow: 0 0 40px rgba(240,220,128,0.15);
+        }
+        .det-sub {
+          font-family: var(--mono);
+          font-size: 9px; color: #bbb;
+          letter-spacing: .12em; text-transform: uppercase;
+        }
+
+        .det-sep {
+          width: 1px; height: 44px; flex-shrink:0;
+          background: rgba(240,220,128,0.25);
+          filter: drop-shadow(0 0 4px rgba(240,220,128,0.3));
+        }
+
+        .det-stats { display:flex; gap:24px; align-items:center; flex-shrink:0; }
+        .det-stat { text-align: center; }
+        .det-val {
+          font-family: 'Bebas Neue', sans-serif;
+          font-size: 24px; letter-spacing: .04em;
+          line-height:1; margin-bottom:3px;
+          filter: drop-shadow(0 0 5px currentColor);
+        }
+        .det-lbl {
+          font-family: var(--mono);
+          font-size: 8px; letter-spacing: .18em;
+          text-transform: uppercase; color: #ccc;
+        }
+
+        /* Enter button */
+        .enter {
+          position: relative;
+          padding: 10px 22px;
+          border: 1px solid rgba(240,220,128,0.45);
+          background: transparent;
+          font-family: var(--mono);
+          font-size: 9px; letter-spacing: .24em;
+          text-transform: uppercase;
+          color: var(--G);
+          cursor: pointer; flex-shrink:0;
+          overflow: hidden;
+          transition: filter .18s ease, border-color .18s ease;
+          filter: drop-shadow(0 0 3px rgba(240,220,128,0.2));
+        }
+        .enter::before {
+          content:'';
+          position:absolute; inset:0;
+          background: rgba(240,220,128,0.09);
+          transform: scaleX(0); transform-origin:left;
+          transition: transform .22s ease;
+        }
+        .enter:hover::before { transform: scaleX(1); }
+        .enter:hover {
+          border-color: rgba(240,220,128,0.8);
+          filter: drop-shadow(0 0 10px rgba(240,220,128,0.5));
+        }
+        .enter span { position:relative; z-index:1; }
+
+        /* Empty state */
+        .det-empty {
+          display: flex; align-items:center; gap:14px;
+          padding: 16px 32px;
+          position: relative; z-index:2;
+        }
+        .det-empty-line {
+          flex:1; height:1px;
+          background: rgba(240,220,128,0.12);
+        }
+        .det-empty-txt {
+          font-family: var(--mono);
+          font-size: 9px; color: #ccc;
+          letter-spacing: .24em; text-transform: uppercase;
+        }
+
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-thumb { background: rgba(240,220,128,0.25); }
+      `}</style>
+
+      <div className="root">
+        <Background/>
+
+        {/* Header */}
+        <header className={`hdr ${mounted ? "in" : ""}`}>
+          <div className="hdr-row">
+            <div>
+              <div className="hdr-name">AbyssGuild</div>
+              <div className="hdr-sub">AbyssGuild · Bera</div>
+            </div>
+            <div className="hdr-right">
+              <div className="hdr-online">
+                <div className="hdr-dot"/>
+                Online
               </div>
-              <span style={{
-                fontSize:8, fontWeight: isActive ? 700 : 500,
-                letterSpacing:"0.06em", textTransform:"uppercase",
-                lineHeight:1, whiteSpace:"nowrap",
-              }}>{item.label}</span>
-              {isActive && (
-                <div style={{
-                  position:"absolute", bottom:3, left:"20%", right:"20%",
-                  height:2, borderRadius:1, background:itemColor, opacity:0.7,
-                }}/>
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Theme label badge
-// ─────────────────────────────────────────────────────────────────────────────
-function ThemeLabel({ activeThemeId }) {
-  const t = useTheme();
-  if (activeThemeId === null) return null;
-  const def = GRANDIS_THEME_DEFS[activeThemeId];
-  return (
-    <div style={{
-      position:"fixed", bottom:24, right:24, zIndex:50,
-      background:`${t.accent}18`, border:`1px solid ${t.accent}44`,
-      borderRadius:10, padding:"6px 14px",
-      display:"flex", alignItems:"center", gap:8,
-      backdropFilter:"blur(8px)",
-      animation:"fadeInUp 0.3s ease both",
-    }}>
-      <div style={{
-        width:8, height:8, borderRadius:2,
-        background:def?.swatch || t.accent,
-        boxShadow:`0 0 8px ${def?.swatch || t.accent}`,
-      }}/>
-      <span style={{ fontSize:9, fontWeight:700, color:t.crumbAccent, letterSpacing:"0.12em", textTransform:"uppercase" }}>
-        {def?.label}
-      </span>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// App root
-// ─────────────────────────────────────────────────────────────────────────────
-export default function App() {
-  const [filter,        setFilter]        = useState("All");
-  const [sortBy,        setSortBy]        = useState("Level");
-  const [activeThemeId, setActiveThemeId] = useState(null);
-
-  const theme = getTheme(activeThemeId);
-
-  const filtered = characters
-    .filter(c => filter === "All" || c.badge === filter)
-    .sort((a,b) => sortBy === "Level" ? b.level - a.level : a.name.localeCompare(b.name));
-
-  return (
-    <ThemeCtx.Provider value={theme}>
-      <>
-        <style>{`
-          * { margin:0; padding:0; box-sizing:border-box; }
-          @keyframes card-rise {
-            from { opacity:0; transform:translateY(16px) scale(0.97); }
-            to   { opacity:1; transform:translateY(0)    scale(1); }
-          }
-          @keyframes dropdown-open {
-            from { opacity:0; transform:translateY(-6px) scale(0.97); }
-            to   { opacity:1; transform:translateY(0)    scale(1); }
-          }
-          @keyframes fadeInUp {
-            from { opacity:0; transform:translateY(8px); }
-            to   { opacity:1; transform:translateY(0); }
-          }
-        `}</style>
-
-        <div style={{
-          minHeight:"100vh",
-          background:`linear-gradient(160deg, ${theme.bgFrom} 0%, ${theme.bgMid} 50%, ${theme.bgTo} 100%)`,
-          display:"flex", flexDirection:"column", alignItems:"center",
-          padding:"36px 24px 60px",
-          fontFamily:"'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
-          position:"relative",
-          transition:"background 0.5s ease",
-        }}>
-          <BGDecor/>
-
-          {/* Header */}
-          <div style={{
-            position:"relative", zIndex:10,
-            width:"100%", maxWidth:900, marginBottom:24,
-            display:"flex", alignItems:"flex-start",
-            justifyContent:"space-between", flexWrap:"wrap", gap:16,
-          }}>
-            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-              <svg width={42} height={42} viewBox="0 0 100 100" fill="none" style={{ flexShrink:0 }}>
-                <path
-                  d="M50 8 L57 28 L72 20 L64 36 L82 34 L68 46 L78 60 L60 56 L56 76 L50 62 L44 76 L40 56 L22 60 L32 46 L18 34 L36 36 L28 20 L43 28 Z"
-                  fill={theme.accent}
-                  style={{ filter:`drop-shadow(0 3px 10px ${theme.accent}66)`, transition:"fill 0.4s" }}
-                />
-                <rect x="47" y="76" width="6" height="14" rx="3" fill={theme.accent} style={{ transition:"fill 0.4s" }}/>
-              </svg>
-              <div>
-                <h1 style={{ fontSize:20, fontWeight:900, color:theme.textD, letterSpacing:"-0.01em", lineHeight:1, transition:"color 0.4s" }}>
-                  Character Roster
-                </h1>
-                <div style={{ fontSize:10, color:theme.textL, letterSpacing:"0.08em", textTransform:"uppercase", marginTop:2, transition:"color 0.4s" }}>
-                  MapleStory · Grandis
-                </div>
+              <div className="hdr-count">
+                <strong>{characters.length}</strong> characters
               </div>
             </div>
-            <NavIcons activeThemeId={activeThemeId} setActiveThemeId={setActiveThemeId}/>
+          </div>
+        </header>
+
+        {/* Body */}
+        <div className={`body ${mounted ? "in" : ""}`}>
+
+          {/* Filter bar */}
+          <div className="bar">
+            <div className="filters">
+              {["All","Main","Farming","In Progress"].map(f => (
+                <button key={f}
+                  className={`fbtn ${filter === f ? "on" : ""}`}
+                  onClick={() => setFilter(f)}
+                >{f}</button>
+              ))}
+            </div>
+            <span className="bar-ct"><strong>{filtered.length}</strong> / {characters.length}</span>
           </div>
 
-          <TopNav filter={filter} setFilter={setFilter} sortBy={sortBy} setSortBy={setSortBy}/>
-
-          <div style={{
-            position:"relative", zIndex:5,
-            display:"flex", flexWrap:"wrap",
-            gap:16, justifyContent:"center", maxWidth:920,
-          }}>
+          {/* Prism grid */}
+          <div className="grid">
             {filtered.map((char, i) => (
-              <CharCard key={char.name} char={char} index={i}/>
+              <PrismCard
+                key={char.name}
+                char={char}
+                index={i}
+                isSel={selected?.name === char.name}
+                isHov={hovered === char.name}
+                onClick={() => setSelected(selected?.name === char.name ? null : char)}
+                onEnter={() => setHovered(char.name)}
+                onLeave={() => setHovered(null)}
+              />
             ))}
           </div>
 
-          <div style={{ position:"relative", zIndex:5, marginTop:36, display:"flex", alignItems:"center", gap:8 }}>
-            <div style={{ width:24, height:1, background:theme.cardBorder, transition:"background 0.4s" }}/>
-            <span style={{ fontSize:9, color:theme.textL, letterSpacing:"0.16em", textTransform:"uppercase", transition:"color 0.4s" }}>
-              {filtered.length} characters displayed
-            </span>
-            <div style={{ width:24, height:1, background:theme.cardBorder, transition:"background 0.4s" }}/>
+          {/* Detail panel */}
+          <div className={`det-wrap ${sel ? "vis" : ""}`}>
+            <div className="det">
+              <div className="det-beam"/>
+              <div className="det-edge"/>
+              {sel ? (() => {
+                const tier = TIER[sel.badge];
+                const hue  = JOB_HUE[sel.type] ?? JOB_HUE.Magician;
+                return (
+                  <div className="det-body">
+                    <div className="det-av" style={{ background: `hsl(${hue}deg 45% 38%)` }}>
+                      {sel.name[0]}
+                    </div>
+                    <div className="det-info">
+                      <div className="det-name">{sel.name}</div>
+                      <div className="det-sub">{sel.cls} · {sel.type}</div>
+                    </div>
+                    <div className="det-sep"/>
+                    <div className="det-stats">
+                      <div className="det-stat">
+                        <div className="det-val" style={{ color: G }}>{sel.level}</div>
+                        <div className="det-lbl">Level</div>
+                      </div>
+                      <div className="det-stat">
+                        <div className="det-val" style={{ color: tier.lit, filter: `drop-shadow(0 0 5px ${tier.lit})` }}>
+                          {tier.label}
+                        </div>
+                        <div className="det-lbl">Tier</div>
+                      </div>
+                      <div className="det-stat">
+                        <div className="det-val" style={{ color: "#999" }}>{sel.type}</div>
+                        <div className="det-lbl">Class</div>
+                      </div>
+                    </div>
+                    <div className="det-sep"/>
+                    <button className="enter"><span>Log In →</span></button>
+                  </div>
+                );
+              })() : (
+                <div className="det-empty">
+                  <div className="det-empty-line"/>
+                  <span className="det-empty-txt">Select a character</span>
+                  <div className="det-empty-line"/>
+                </div>
+              )}
+            </div>
           </div>
 
-          <ThemeLabel activeThemeId={activeThemeId}/>
         </div>
-      </>
-    </ThemeCtx.Provider>
+      </div>
+    </>
   );
 }
