@@ -212,23 +212,26 @@ function Background() {
   return <canvas ref={canvasRef} style={{position:"fixed",inset:0,width:"100%",height:"100%",zIndex:0,pointerEvents:"none"}}/>;
 }
 
+// Swap this for your R2 public bucket URL when ready
+const IMG_BASE = "https://pub-xxxx.r2.dev";
+
 const characters = [
-  { name: "Yunli",    cls: "Ren",          type: "Warrior",  level: 288, badge: "Main"  },
-  { name: "Lecia",    cls: "Hero",         type: "Warrior",  level: 287, badge: "Farming" },
-  { name: "Gremory",  cls: "Cadena",       type: "Thief",    level: 270, badge: "Farming" },
-  { name: "Guilty",   cls: "Bishop",       type: "Magician", level: 268, badge: "Farming" },
-  { name: "Iono",     cls: "Lynn",         type: "Magician", level: 263, badge: "Farming" },
-  { name: "Yutet",    cls: "Demon Slayer", type: "Warrior",  level: 262, badge: "In Progress"   },
-  { name: "Kisaki",   cls: "Khali",        type: "Thief",    level: 260, badge: "In Progress"   },
-  { name: "Kasel",    cls: "Kanna",        type: "Magician", level: 260, badge: "In Progress"   },
-  { name: "Filene",   cls: "Fire/Poison",  type: "Mage",     level: 260, badge: "In Progress"   },
-  { name: "Aijou",    cls: "Battle Mage",  type: "Magician", level: 260, badge: "In Progress"   },
-  { name: "Fuyuko",   cls: "Aran",         type: "Warrior",  level: 260, badge: "In Progress"   },
-  { name: "Solais",   cls: "Sia Astelle",  type: "Magician", level: 253, badge: "In Progress"   },
-  { name: "Cordelia", cls: "Adele",        type: "Warrior",  level: 252, badge: "In Progress"   },
-  { name: "Ramizel",  cls: "Lara",         type: "Magician", level: 251, badge: "In Progress"   },
-  { name: "Yubel",    cls: "Shade",        type: "Warrior",  level: 251, badge: "In Progress"   },
-  { name: "Ramuh",    cls: "Buccaneer",    type: "Pirate",   level: 250, badge: "In Progress"   },
+  { name: "Yunli",    cls: "Ren",          type: "Warrior",  level: 288, badge: "Main",         img: "ren"       },
+  { name: "Lecia",    cls: "Hero",         type: "Warrior",  level: 287, badge: "Farming",      img: "hero"      },
+  { name: "Gremory",  cls: "Cadena",       type: "Thief",    level: 270, badge: "Farming",      img: "cadena"    },
+  { name: "Guilty",   cls: "Bishop",       type: "Magician", level: 268, badge: "Farming",      img: "bishop"    },
+  { name: "Iono",     cls: "Lynn",         type: "Magician", level: 263, badge: "Farming",      img: "lynn"      },
+  { name: "Yutet",    cls: "Demon Slayer", type: "Warrior",  level: 262, badge: "In Progress",  img: "ds"        },
+  { name: "Kisaki",   cls: "Khali",        type: "Thief",    level: 260, badge: "In Progress",  img: "khali"     },
+  { name: "Kasel",    cls: "Kanna",        type: "Magician", level: 260, badge: "In Progress",  img: "kanna"     },
+  { name: "Filene",   cls: "Fire/Poison",  type: "Mage",     level: 260, badge: "In Progress",  img: "fp"        },
+  { name: "Aijou",    cls: "Battle Mage",  type: "Magician", level: 260, badge: "In Progress",  img: "bam"       },
+  { name: "Fuyuko",   cls: "Aran",         type: "Warrior",  level: 260, badge: "In Progress",  img: "aran"      },
+  { name: "Solais",   cls: "Sia Astelle",  type: "Magician", level: 253, badge: "In Progress",  img: "sia"       },
+  { name: "Cordelia", cls: "Adele",        type: "Warrior",  level: 252, badge: "In Progress",  img: "adele"     },
+  { name: "Ramizel",  cls: "Lara",         type: "Magician", level: 251, badge: "In Progress",  img: "lara"      },
+  { name: "Yubel",    cls: "Shade",        type: "Warrior",  level: 251, badge: "In Progress",  img: "shade"     },
+  { name: "Ramuh",    cls: "Buccaneer",    type: "Pirate",   level: 250, badge: "In Progress",  img: "buccaneer" },
 ];
 
 const TIER = {
@@ -251,6 +254,7 @@ function PrismCard({ char, index, isSel, isHov, onClick, onEnter, onLeave }) {
   const tier  = TIER[char.badge];
   const hue   = JOB_HUE[char.type] ?? JOB_HUE.Magician;
   const lit   = isSel || isHov;
+  const [imgErr, setImgErr] = useState(false);
 
   // Which cards get the center seam (every 3rd)
   const hasSeam = index % 3 === 1;
@@ -353,12 +357,22 @@ function PrismCard({ char, index, isSel, isHov, onClick, onEnter, onLeave }) {
       {/* ── Card content ── */}
       <div className="prism-body">
 
-        {/* Upper zone — avatar */}
-        <div className="prism-upper">
-          <div className="prism-av"
-            style={{ background: `hsl(${hue}deg 45% 38%)` }}>
-            {char.name[0]}
-          </div>
+        {/* Sprite — overflows top and sides, anchored to bottom of upper zone */}
+        <div className="prism-sprite-wrap">
+          {!imgErr ? (
+            <img
+              className="prism-sprite"
+              src={`${IMG_BASE}/${char.img}.png`}
+              alt={char.name}
+              onError={() => setImgErr(true)}
+            />
+          ) : (
+            /* Fallback initial if image not uploaded yet */
+            <div className="prism-av-fallback"
+              style={{ background: `hsl(${hue}deg 45% 38%)` }}>
+              {char.name[0]}
+            </div>
+          )}
         </div>
 
         {/* Lower zone — data */}
@@ -584,8 +598,10 @@ export default function CharSelect() {
         /* ── Prism grid — tall narrow cards ── */
         .grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
-          gap: 14px;
+          grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+          gap: 20px;
+          /* Top padding gives sprite overflow room above the card border */
+          padding-top: 80px;
         }
 
         /* ── Prism card ── */
@@ -596,7 +612,7 @@ export default function CharSelect() {
           -webkit-backdrop-filter: blur(16px);
           border: 1px solid rgba(240,220,128,0.18);
           cursor: pointer;
-          overflow: hidden;
+          overflow: visible;   /* sprite overflows top and sides */
           opacity: 0;
           animation: rise .38s ease forwards;
           transition: border-color .28s ease, box-shadow .28s ease, transform .22s ease;
@@ -640,30 +656,54 @@ export default function CharSelect() {
           height: 100%;
         }
 
-        /* Upper zone — avatar area, taller */
-        .prism-upper {
-          padding: 22px 0 18px;
+        /* Sprite wrapper — sits above the card border, anchored to bottom */
+        .prism-sprite-wrap {
+          position: relative;
+          width: 100%;
+          height: 160px;          /* reserved zone — sprite overflows upward from here */
           display: flex;
-          align-items: center;
+          align-items: flex-end;  /* anchor sprite to the bottom of the zone */
           justify-content: center;
-          /* Height matches the horizontal divider at 72/160 of SVG */
-          flex: 0 0 auto;
+          pointer-events: none;
+          /* clips left/right overflow but NOT top — top is open sky */
+          overflow: hidden;
+          margin-top: -80px;      /* pull zone up so sprite breaches card top edge */
         }
 
-        /* Avatar — simple circle, no octagon, the monolith doesn't decorate */
-        .prism-av {
-          width: 46px; height: 46px;
+        .prism-sprite {
+          display: block;
+          height: 200px;          /* fixed height — all sprites same size */
+          width: auto;
+          object-fit: contain;
+          object-position: bottom center;
+          /* Drop shadow so sprite reads against any background */
+          filter: drop-shadow(0 4px 12px rgba(0,0,0,0.18))
+                  drop-shadow(0 1px 3px rgba(0,0,0,0.12));
+          transition: filter .28s ease, transform .28s ease;
+          pointer-events: none;
+        }
+        .prism:hover .prism-sprite, .prism.sel .prism-sprite {
+          filter: drop-shadow(0 4px 16px rgba(240,220,128,0.35))
+                  drop-shadow(0 0 12px rgba(240,220,128,0.20))
+                  drop-shadow(0 1px 3px rgba(0,0,0,0.10));
+          transform: translateY(-4px);
+        }
+
+        /* Fallback initial circle when image not yet uploaded */
+        .prism-av-fallback {
+          width: 64px; height: 64px;
           border-radius: 50%;
           display: flex; align-items: center; justify-content: center;
           font-family: 'Bebas Neue', sans-serif;
-          font-size: 22px;
+          font-size: 26px;
           letter-spacing: .04em;
           color: rgba(255,255,255,0.88);
+          margin-bottom: 16px;
         }
 
         /* Lower zone — text data */
         .prism-lower {
-          padding: 14px 12px 16px;
+          padding: 10px 13px 16px;
           display: flex;
           flex-direction: column;
           gap: 2px;
