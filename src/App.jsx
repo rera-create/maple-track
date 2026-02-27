@@ -426,11 +426,13 @@ function PrismCard({ char, index, isSel, isHov, onClick, onEnter, onLeave }) {
   );
 }
 
-export default function CharSelect() {
+export default function App() {
   const [filter,   setFilter]  = useState("All");
   const [selected, setSelected] = useState(null);
   const [mounted,  setMounted]  = useState(false);
   const [hovered,  setHovered]  = useState(null);
+  const [theme,    setTheme]    = useState("pearl");
+  const [navPage,  setNavPage]  = useState("experience");
 
   useEffect(() => { setTimeout(() => setMounted(true), 60); }, []);
 
@@ -444,20 +446,51 @@ export default function CharSelect() {
 
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
+        /* ── Theme: Pearl (default) — white base, pale gold light ── */
         :root {
-          --G:    #F0DC80;
-          --Gdim: rgba(240,220,128,0.18);
-          --Glo:  rgba(240,220,128,0.65);
-          --text: #111;
-          --dim:  #999;
+          --G:          #F0DC80;
+          --Gr:         240,220,128;     /* RGB triplet for rgba() use */
+          --Gdim:       rgba(240,220,128,0.18);
+          --Glo:        rgba(240,220,128,0.65);
+          --bg:         #ffffff;
+          --card-bg:    rgba(255,255,255,0.52);
+          --card-hover: rgba(255,255,255,0.72);
+          --sidebar-bg: rgba(255,255,255,0.68);
+          --border:     rgba(240,220,128,0.22);
+          --text:       #111111;
+          --text-mid:   #555555;
+          --dim:        #999999;
+          --dim2:       #cccccc;
+          --nav-active-bg: rgba(240,220,128,0.10);
+          --nav-active-text: #111;
           --mono: 'DM Mono', monospace;
         }
 
-        html, body { background: #fff; }
+        /* ── Theme: Obsidian — near-black base, brighter gold ── */
+        [data-theme="obsidian"] {
+          --G:          #FFE566;
+          --Gr:         255,229,102;
+          --Gdim:       rgba(255,229,102,0.22);
+          --Glo:        rgba(255,229,102,0.70);
+          --bg:         #0e0e0e;
+          --card-bg:    rgba(22,22,22,0.75);
+          --card-hover: rgba(30,30,30,0.90);
+          --sidebar-bg: rgba(14,14,14,0.85);
+          --border:     rgba(255,229,102,0.18);
+          --text:       #f0f0f0;
+          --text-mid:   #aaaaaa;
+          --dim:        #666666;
+          --dim2:       #444444;
+          --nav-active-bg: rgba(255,229,102,0.10);
+          --nav-active-text: #fff;
+        }
+
+        html, body { background: var(--bg); }
         body {
           font-family: 'DM Sans', sans-serif;
           -webkit-font-smoothing: antialiased;
           color: var(--text);
+          background: var(--bg);
         }
 
         /* Root transparent so canvas orbs show through */
@@ -468,103 +501,272 @@ export default function CharSelect() {
           z-index: 1;
         }
 
-        /* ── Header — frosted glass ── */
-        .hdr {
-          padding: 48px 56px 40px;
-          border-bottom: 1px solid rgba(240,220,128,0.20);
-          position: relative;
-          opacity: 0; transform: translateY(-8px);
-          transition: opacity .5s ease, transform .5s ease;
-          background: rgba(255,255,255,0.70);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
+        /* ── Root layout — full viewport, two columns ── */
+        .layout {
+          display: flex;
+          width: 100vw;
+          min-height: 100vh;
         }
-        .hdr.in { opacity: 1; transform: translateY(0); }
 
-        /* The single gold line at the bottom of the header — the monolith's horizon */
-        .hdr::after {
+        /* ── Left panel — dashboard, fixed width ── */
+        .sidebar {
+          width: 380px;
+          min-width: 380px;
+          min-height: 100vh;
+          background: var(--sidebar-bg);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+          border-right: 1px solid var(--border);
+          position: relative;
+          z-index: 2;
+          display: flex;
+          flex-direction: column;
+          opacity: 0; transform: translateX(-12px);
+          transition: opacity .5s ease, transform .5s ease;
+        }
+        .sidebar.in { opacity:1; transform:translateX(0); }
+
+        /* Gold right-edge glow on sidebar */
+        .sidebar::after {
           content: '';
           position: absolute;
-          bottom: -1px; left: 56px; right: 56px;
+          top: 60px; bottom: 60px; right: -1px;
+          width: 1px;
+          background: linear-gradient(180deg,
+            transparent,
+            rgba(240,220,128,0.5) 20%,
+            rgba(240,220,128,0.9) 50%,
+            rgba(240,220,128,0.5) 80%,
+            transparent);
+          filter: drop-shadow(0 0 6px rgba(240,220,128,0.7));
+        }
+
+        /* Guild name + meta at top of sidebar */
+        .sidebar-hdr {
+          padding: 44px 36px 32px;
+          border-bottom: 1px solid rgba(240,220,128,0.14);
+          position: relative;
+        }
+        .sidebar-hdr::after {
+          content: '';
+          position: absolute;
+          bottom: -1px; left: 36px; right: 36px;
           height: 1px;
           background: linear-gradient(90deg,
-            transparent,
-            rgba(240,220,128,0.5) 15%,
-            rgba(240,220,128,1)   50%,
-            rgba(240,220,128,0.5) 85%,
-            transparent);
-          filter: drop-shadow(0 0 8px rgba(240,220,128,0.9));
+            rgba(240,220,128,0.8), transparent);
+          filter: drop-shadow(0 0 5px rgba(240,220,128,0.6));
         }
-
-        .hdr-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-end;
-        }
-
-        .hdr-name {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 52px;
-          letter-spacing: .08em;
-          line-height: 1;
-          color: #0a0a0a;
-          /* Very faint warm shadow — like light beneath the letters */
-          text-shadow: 0 0 60px rgba(240,220,128,0.20);
-        }
-
-        .hdr-sub {
+        .sidebar-eyebrow {
           font-family: var(--mono);
           font-size: 9px;
-          letter-spacing: .26em;
+          letter-spacing: .28em;
           text-transform: uppercase;
-          color: rgba(240,220,128,0.8);
-          filter: drop-shadow(0 0 6px rgba(240,220,128,0.6));
-          margin-top: 8px;
+          color: rgba(240,220,128,0.75);
+          filter: drop-shadow(0 0 5px rgba(240,220,128,0.5));
+          margin-bottom: 10px;
         }
-
-        .hdr-right {
-          text-align: right;
-          padding-bottom: 4px;
+        .sidebar-name {
+          font-family: 'Bebas Neue', sans-serif;
+          font-size: 56px;
+          letter-spacing: .06em;
+          line-height: 1;
+          color: var(--text);
+          text-shadow: 0 0 60px rgba(var(--Gr),0.18);
+          margin-bottom: 14px;
         }
-        .hdr-online {
+        .sidebar-meta {
           display: flex;
           align-items: center;
-          justify-content: flex-end;
-          gap: 7px;
-          font-family: var(--mono);
-          font-size: 9px;
-          letter-spacing: .18em;
-          text-transform: uppercase;
-          color: var(--dim);
-          margin-bottom: 6px;
+          gap: 14px;
         }
-        .hdr-dot {
+        .sidebar-dot {
           width: 5px; height: 5px;
           background: #6ee7b7;
           box-shadow: 0 0 5px #6ee7b7, 0 0 12px rgba(110,231,183,.4);
           animation: pulse 2.5s ease-in-out infinite;
+          flex-shrink: 0;
         }
         @keyframes pulse { 0%,100%{opacity:1} 55%{opacity:.3} }
-        .hdr-count {
+        .sidebar-server {
           font-family: var(--mono);
-          font-size: 11px;
-          color: var(--dim);
+          font-size: 9px;
+          letter-spacing: .18em;
+          text-transform: uppercase;
+          color: #bbb;
         }
-        .hdr-count strong {
+        .sidebar-count {
+          font-family: var(--mono);
+          font-size: 9px;
+          color: #bbb;
+          letter-spacing: .10em;
+          margin-left: auto;
+        }
+        .sidebar-count strong {
           color: var(--G);
-          font-weight: 500;
-          filter: drop-shadow(0 0 5px rgba(240,220,128,.6));
+          font-weight: 400;
+          filter: drop-shadow(0 0 4px rgba(240,220,128,.6));
         }
 
-        /* ── Page body ── */
-        .body {
-          max-width: 1080px;
-          margin: 0 auto;
-          padding: 36px 56px 80px;
-          opacity: 0; transform: translateY(6px);
-          transition: opacity .45s .08s ease, transform .45s .08s ease;
+        /* Sidebar scrollable body */
+        .sidebar-body {
+          flex: 1;
+          overflow-y: auto;
+          padding: 0 0 40px;
         }
-        .body.in { opacity:1; transform:translateY(0); }
+
+        /* Navigation section */
+        .nav {
+          padding: 28px 0 0;
+        }
+        .nav-section-label {
+          font-family: var(--mono);
+          font-size: 8px;
+          letter-spacing: .28em;
+          text-transform: uppercase;
+          color: var(--dim);
+          padding: 0 36px 10px;
+          opacity: 0.6;
+        }
+        .nav-item {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          padding: 13px 36px;
+          cursor: pointer;
+          position: relative;
+          transition: background .1s ease;
+          text-decoration: none;
+          border: none;
+          background: transparent;
+          width: 100%;
+          text-align: left;
+        }
+        .nav-item:hover {
+          background: rgba(var(--Gr),0.06);
+        }
+        .nav-item.active {
+          background: var(--nav-active-bg);
+        }
+        /* Gold left accent on active item */
+        .nav-item.active::before {
+          content: '';
+          position: absolute;
+          left: 0; top: 4px; bottom: 4px;
+          width: 2px;
+          background: var(--G);
+          filter: drop-shadow(0 0 5px var(--G));
+        }
+        /* Icon box */
+        .nav-icon {
+          width: 32px; height: 32px;
+          display: flex; align-items: center; justify-content: center;
+          border: 1px solid rgba(var(--Gr),0.15);
+          flex-shrink: 0;
+          transition: border-color .1s, filter .1s;
+        }
+        .nav-item:hover   .nav-icon,
+        .nav-item.active  .nav-icon {
+          border-color: rgba(var(--Gr),0.45);
+          filter: drop-shadow(0 0 4px rgba(var(--Gr),0.3));
+        }
+        .nav-icon svg {
+          width: 14px; height: 14px;
+          stroke: var(--dim);
+          fill: none;
+          stroke-width: 1.5;
+          stroke-linecap: square;
+          transition: stroke .1s;
+        }
+        .nav-item:hover   .nav-icon svg,
+        .nav-item.active  .nav-icon svg { stroke: var(--G); }
+
+        .nav-label {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--text-mid);
+          letter-spacing: .01em;
+          transition: color .1s;
+        }
+        .nav-item:hover  .nav-label { color: var(--text); }
+        .nav-item.active .nav-label { color: var(--nav-active-text); }
+
+        .nav-sub {
+          font-family: var(--mono);
+          font-size: 8px;
+          color: var(--dim);
+          letter-spacing: .08em;
+          margin-left: auto;
+        }
+        .nav-item.active .nav-sub {
+          color: rgba(var(--Gr),0.7);
+        }
+
+        /* Thin gold separator between nav groups */
+        .nav-sep {
+          height: 1px;
+          margin: 14px 36px;
+          background: linear-gradient(90deg, rgba(var(--Gr),0.25), transparent);
+        }
+
+        /* Theme toggle at bottom of sidebar */
+        .theme-toggle {
+          padding: 20px 36px 0;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-top: auto;
+        }
+        .theme-toggle-label {
+          font-family: var(--mono);
+          font-size: 8px;
+          letter-spacing: .20em;
+          text-transform: uppercase;
+          color: var(--dim);
+          flex: 1;
+        }
+        .theme-pills {
+          display: flex;
+          gap: 6px;
+        }
+        .theme-pill {
+          width: 28px; height: 16px;
+          border: 1px solid rgba(var(--Gr),0.25);
+          cursor: pointer;
+          position: relative;
+          display: flex; align-items: center; justify-content: center;
+          transition: border-color .12s;
+          background: transparent;
+          padding: 0;
+        }
+        .theme-pill:hover { border-color: rgba(var(--Gr),0.6); }
+        .theme-pill.active { border-color: var(--G); }
+        .theme-pill.active::after {
+          content: '';
+          position: absolute;
+          inset: 2px;
+          background: var(--G);
+          opacity: 0.3;
+        }
+        /* Pearl swatch */
+        .theme-pill.pearl .swatch { background: #f5f5f5; }
+        /* Obsidian swatch */
+        .theme-pill.obsidian .swatch { background: #111; }
+        .swatch {
+          width: 12px; height: 8px;
+          position: relative; z-index: 1;
+        }
+
+        /* ── Right panel — cards + detail ── */
+        .content {
+          flex: 1;
+          min-width: 0;
+          padding: 40px 48px 80px 52px;
+          overflow-y: auto;
+          opacity: 0; transform: translateY(8px);
+          transition: opacity .45s .1s ease, transform .45s .1s ease;
+        }
+        .content.in { opacity:1; transform:translateY(0); }
 
         /* ── Filter bar ── */
         .bar {
@@ -612,7 +814,7 @@ export default function CharSelect() {
         .bar-ct {
           font-family: var(--mono);
           font-size: 9px;
-          color: #ccc;
+          color: var(--dim);
           letter-spacing: .12em;
         }
         .bar-ct strong {
@@ -636,10 +838,10 @@ export default function CharSelect() {
         /* ── Prism card ── */
         .prism {
           position: relative;
-          background: rgba(255,255,255,0.52);
+          background: var(--card-bg);
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
-          border: 1px solid rgba(240,220,128,0.18);
+          border: 1px solid var(--border);
           cursor: pointer;
           overflow: visible;
           opacity: 0;
@@ -656,8 +858,8 @@ export default function CharSelect() {
 
         /* ── Default hover / selected ── */
         .prism:hover, .prism.sel {
-          background: rgba(255,255,255,0.72);
-          border-color: rgba(240,220,128,0.55);
+          background: var(--card-hover);
+          border-color: rgba(var(--Gr),0.55);
           box-shadow:
             inset 0 0 60px rgba(240,220,128,0.06),
             0 0 0 1px rgba(240,220,128,0.14),
@@ -695,21 +897,23 @@ export default function CharSelect() {
         }
         .particle {
           position: absolute;
-          bottom: 20%;
-          width: 3px; height: 3px;
+          bottom: 18%;
+          width: var(--sz, 4px); height: var(--sz, 4px);
           border-radius: 50%;
           background: var(--G);
+          box-shadow: 0 0 6px 2px var(--G), 0 0 14px 4px rgba(var(--Gr),0.6);
           opacity: 0;
         }
         .prism.is-main:hover .particle,
         .prism.is-main.sel   .particle {
-          animation: shimmer-rise var(--dur) ease-out var(--delay) infinite;
+          animation: shimmer-rise var(--dur) ease-in-out var(--delay) infinite;
         }
         @keyframes shimmer-rise {
-          0%   { transform: translate(var(--tx), 0)   scale(1);   opacity: 0; }
-          15%  { opacity: 0.9; }
-          80%  { opacity: 0.4; }
-          100% { transform: translate(var(--tx), -90px) scale(0); opacity: 0; }
+          0%   { transform: translate(var(--tx), 0)      scale(1);    opacity: 0;   }
+          12%  { opacity: 1; }
+          40%  { opacity: 0.85; }
+          75%  { opacity: 0.5; }
+          100% { transform: translate(var(--tx), -130px) scale(0.2);  opacity: 0;   }
         }
 
         /* ── Main card hover — full bloom ── */
@@ -869,7 +1073,7 @@ export default function CharSelect() {
           font-size: 13px;
           font-weight: 500;
           letter-spacing: -.01em;
-          color: #111;
+          color: var(--text);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -891,7 +1095,7 @@ export default function CharSelect() {
         .prism-cls {
           font-family: var(--mono);
           font-size: 8.5px;
-          color: #bbb;
+          color: var(--dim);
           letter-spacing: .04em;
           white-space: nowrap;
           overflow: hidden;
@@ -929,7 +1133,7 @@ export default function CharSelect() {
 
         .det {
           border: 1px solid rgba(240,220,128,0.45);
-          background: rgba(255,255,255,0.65);
+          background: var(--card-hover);
           backdrop-filter: blur(24px);
           -webkit-backdrop-filter: blur(24px);
           position: relative;
@@ -987,13 +1191,13 @@ export default function CharSelect() {
         .det-name {
           font-family: 'Bebas Neue', sans-serif;
           font-size: 26px; letter-spacing: .06em;
-          color: #0a0a0a; line-height:1;
+          color: var(--text); line-height:1;
           margin-bottom: 4px;
           text-shadow: 0 0 40px rgba(240,220,128,0.15);
         }
         .det-sub {
           font-family: var(--mono);
-          font-size: 9px; color: #bbb;
+          font-size: 9px; color: var(--dim);
           letter-spacing: .12em; text-transform: uppercase;
         }
 
@@ -1014,7 +1218,7 @@ export default function CharSelect() {
         .det-lbl {
           font-family: var(--mono);
           font-size: 8px; letter-spacing: .18em;
-          text-transform: uppercase; color: #ccc;
+          text-transform: uppercase; color: var(--dim);
         }
 
         /* Enter button */
@@ -1058,116 +1262,178 @@ export default function CharSelect() {
         }
         .det-empty-txt {
           font-family: var(--mono);
-          font-size: 9px; color: #ccc;
+          font-size: 9px; color: var(--dim);
           letter-spacing: .24em; text-transform: uppercase;
         }
 
         ::-webkit-scrollbar { width: 3px; }
-        ::-webkit-scrollbar-thumb { background: rgba(240,220,128,0.25); }
+        ::-webkit-scrollbar-thumb { background: rgba(var(--Gr),0.25); }
       `}</style>
 
-      <div className="root">
+      <div className="root" data-theme={theme === "obsidian" ? "obsidian" : undefined}>
         <Background/>
 
-        {/* Header */}
-        <header className={`hdr ${mounted ? "in" : ""}`}>
-          <div className="hdr-row">
-            <div>
-              <div className="hdr-name">AbyssGuild</div>
-              <div className="hdr-sub">AbyssGuild · Bera</div>
-            </div>
-            <div className="hdr-right">
-              <div className="hdr-online">
-                <div className="hdr-dot"/>
-                Online
-              </div>
-              <div className="hdr-count">
-                <strong>{characters.length}</strong> characters
-              </div>
-            </div>
-          </div>
-        </header>
+        <div className="layout">
 
-        {/* Body */}
-        <div className={`body ${mounted ? "in" : ""}`}>
+          {/* ── Left: Sidebar dashboard ── */}
+          <aside className={`sidebar ${mounted ? "in" : ""}`}>
+            <div className="sidebar-hdr">
+              <div className="sidebar-eyebrow">Bera · AbyssGuild</div>
+              <div className="sidebar-name">Abyss<br/>Guild</div>
+              <div className="sidebar-meta">
+                <div className="sidebar-dot"/>
+                <span className="sidebar-server">Online</span>
+                <span className="sidebar-count">
+                  <strong>{characters.length}</strong> characters
+                </span>
+              </div>
+            </div>
 
-          {/* Filter bar */}
-          <div className="bar">
-            <div className="filters">
-              {["All","Main","Farming","In Progress"].map(f => (
-                <button key={f}
-                  className={`fbtn ${filter === f ? "on" : ""}`}
-                  onClick={() => setFilter(f)}
-                >{f}</button>
+            <div className="sidebar-body">
+              <nav className="nav">
+                <div className="nav-section-label">Character</div>
+
+                {[
+                  { id:"experience", label:"Experience", sub:"EXP",
+                    icon:<><line x1="3" y1="12" x2="11" y2="12"/><polyline points="8 8 12 12 8 16"/><rect x="1" y="3" width="14" height="18" rx="0"/></> },
+                  { id:"equipment",  label:"Equipment",  sub:"GEAR",
+                    icon:<><rect x="2" y="6" width="12" height="8"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="8" y1="14" x2="8" y2="18"/></> },
+                ].map(item => (
+                  <button key={item.id}
+                    className={`nav-item${navPage===item.id?" active":""}`}
+                    onClick={() => setNavPage(item.id)}>
+                    <div className="nav-icon">
+                      <svg viewBox="0 0 16 16">{item.icon}</svg>
+                    </div>
+                    <span className="nav-label">{item.label}</span>
+                    <span className="nav-sub">{item.sub}</span>
+                  </button>
+                ))}
+
+                <div className="nav-sep"/>
+                <div className="nav-section-label">Daily &amp; Weekly</div>
+
+                {[
+                  { id:"dailies",  label:"Dailies",  sub:"DAY",
+                    icon:<><circle cx="8" cy="8" r="6"/><line x1="8" y1="4" x2="8" y2="8"/><line x1="8" y1="8" x2="11" y2="10"/></> },
+                  { id:"weeklies", label:"Weeklies", sub:"WK",
+                    icon:<><rect x="2" y="2" width="12" height="12"/><line x1="2" y1="6" x2="14" y2="6"/><line x1="6" y1="2" x2="6" y2="6"/><line x1="10" y1="2" x2="10" y2="6"/></> },
+                  { id:"bosses",   label:"Bosses",   sub:"BOSS",
+                    icon:<><polygon points="8 2 14 14 2 14"/><line x1="8" y1="7" x2="8" y2="10"/><line x1="8" y1="12" x2="8" y2="13"/></> },
+                ].map(item => (
+                  <button key={item.id}
+                    className={`nav-item${navPage===item.id?" active":""}`}
+                    onClick={() => setNavPage(item.id)}>
+                    <div className="nav-icon">
+                      <svg viewBox="0 0 16 16">{item.icon}</svg>
+                    </div>
+                    <span className="nav-label">{item.label}</span>
+                    <span className="nav-sub">{item.sub}</span>
+                  </button>
+                ))}
+              </nav>
+
+              {/* Theme toggle — natural flow, no box */}
+              <div className="theme-toggle">
+                <span className="theme-toggle-label">Theme</span>
+                <div className="theme-pills">
+                  {[
+                    { id:"pearl",    label:"Pearl" },
+                    { id:"obsidian", label:"Obsidian" },
+                  ].map(t => (
+                    <button key={t.id}
+                      className={`theme-pill ${t.id}${theme===t.id?" active":""}`}
+                      onClick={() => setTheme(t.id)}
+                      title={t.label}>
+                      <div className="swatch"/>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* ── Right: Cards + detail ── */}
+          <main className={`content ${mounted ? "in" : ""}`}>
+
+            {/* Filter bar */}
+            <div className="bar">
+              <div className="filters">
+                {["All","Main","Farming","In Progress"].map(f => (
+                  <button key={f}
+                    className={`fbtn ${filter === f ? "on" : ""}`}
+                    onClick={() => setFilter(f)}
+                  >{f}</button>
+                ))}
+              </div>
+              <span className="bar-ct"><strong>{filtered.length}</strong> / {characters.length}</span>
+            </div>
+
+            {/* Prism grid */}
+            <div className="grid">
+              {filtered.map((char, i) => (
+                <PrismCard
+                  key={char.name}
+                  char={char}
+                  index={i}
+                  isSel={selected?.name === char.name}
+                  isHov={hovered === char.name}
+                  onClick={() => setSelected(selected?.name === char.name ? null : char)}
+                  onEnter={() => setHovered(char.name)}
+                  onLeave={() => setHovered(null)}
+                />
               ))}
             </div>
-            <span className="bar-ct"><strong>{filtered.length}</strong> / {characters.length}</span>
-          </div>
 
-          {/* Prism grid */}
-          <div className="grid">
-            {filtered.map((char, i) => (
-              <PrismCard
-                key={char.name}
-                char={char}
-                index={i}
-                isSel={selected?.name === char.name}
-                isHov={hovered === char.name}
-                onClick={() => setSelected(selected?.name === char.name ? null : char)}
-                onEnter={() => setHovered(char.name)}
-                onLeave={() => setHovered(null)}
-              />
-            ))}
-          </div>
-
-          {/* Detail panel */}
-          <div className={`det-wrap ${sel ? "vis" : ""}`}>
-            <div className="det">
-              <div className="det-beam"/>
-              <div className="det-edge"/>
-              {sel ? (() => {
-                const tier = TIER[sel.badge];
-                const hue  = JOB_HUE[sel.type] ?? JOB_HUE.Magician;
-                return (
-                  <div className="det-body">
-                    <div className="det-av" style={{ background: `hsl(${hue}deg 45% 38%)` }}>
-                      {sel.name[0]}
-                    </div>
-                    <div className="det-info">
-                      <div className="det-name">{sel.name}</div>
-                      <div className="det-sub">{sel.cls} · {sel.type}</div>
-                    </div>
-                    <div className="det-sep"/>
-                    <div className="det-stats">
-                      <div className="det-stat">
-                        <div className="det-val" style={{ color: G }}>{sel.level}</div>
-                        <div className="det-lbl">Level</div>
+            {/* Detail panel */}
+            <div className={`det-wrap ${sel ? "vis" : ""}`}>
+              <div className="det">
+                <div className="det-beam"/>
+                <div className="det-edge"/>
+                {sel ? (() => {
+                  const tier = TIER[sel.badge];
+                  const hue  = JOB_HUE[sel.type] ?? JOB_HUE.Magician;
+                  return (
+                    <div className="det-body">
+                      <div className="det-av" style={{ background: `hsl(${hue}deg 45% 38%)` }}>
+                        {sel.name[0]}
                       </div>
-                      <div className="det-stat">
-                        <div className="det-val" style={{ color: tier.lit, filter: `drop-shadow(0 0 5px ${tier.lit})` }}>
-                          {tier.label}
+                      <div className="det-info">
+                        <div className="det-name">{sel.name}</div>
+                        <div className="det-sub">{sel.cls} · {sel.type}</div>
+                      </div>
+                      <div className="det-sep"/>
+                      <div className="det-stats">
+                        <div className="det-stat">
+                          <div className="det-val" style={{ color: G }}>{sel.level}</div>
+                          <div className="det-lbl">Level</div>
                         </div>
-                        <div className="det-lbl">Tier</div>
+                        <div className="det-stat">
+                          <div className="det-val" style={{ color: tier.lit, filter: `drop-shadow(0 0 5px ${tier.lit})` }}>
+                            {tier.label}
+                          </div>
+                          <div className="det-lbl">Potential</div>
+                        </div>
+                        <div className="det-stat">
+                          <div className="det-val" style={{ color: "#999" }}>{sel.type}</div>
+                          <div className="det-lbl">Job</div>
+                        </div>
                       </div>
-                      <div className="det-stat">
-                        <div className="det-val" style={{ color: "#999" }}>{sel.type}</div>
-                        <div className="det-lbl">Class</div>
-                      </div>
+                      <div className="det-sep"/>
+                      <button className="enter"><span>Log In →</span></button>
                     </div>
-                    <div className="det-sep"/>
-                    <button className="enter"><span>Log In →</span></button>
+                  );
+                })() : (
+                  <div className="det-empty">
+                    <div className="det-empty-line"/>
+                    <span className="det-empty-txt">Select a character</span>
+                    <div className="det-empty-line"/>
                   </div>
-                );
-              })() : (
-                <div className="det-empty">
-                  <div className="det-empty-line"/>
-                  <span className="det-empty-txt">Select a character</span>
-                  <div className="det-empty-line"/>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
 
+          </main>
         </div>
       </div>
     </>
