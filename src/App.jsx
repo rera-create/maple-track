@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 
-// ── Animated background ───────────────────────────────────────────────────────
+// ── Animated background — Crown aesthetic ────────────────────────────────────
 function Background() {
   const canvasRef = useRef(null);
   useEffect(() => {
@@ -12,201 +12,179 @@ function Background() {
     window.addEventListener("resize", resize);
 
     const TWO_PI = Math.PI * 2;
-    const G  = (a) => `rgba(240,215,110,${a})`;
-    const Gw = (a) => `rgba(255,242,168,${a})`;
+    const G  = (a) => `rgba(220,185, 80,${a})`;   // warm gold
+    const Gw = (a) => `rgba(255,235,140,${a})`;   // bright gold highlight
 
-    // Drifting orbs — ambient warmth
-    const orbs = [
-      { x:0.18, y:0.22, vx: 0.00040, vy: 0.00028, r:0.42, ph:0.0 },
-      { x:0.78, y:0.62, vx:-0.00035, vy:-0.00025, r:0.48, ph:1.8 },
-      { x:0.52, y:0.85, vx: 0.00025, vy:-0.00038, r:0.36, ph:3.5 },
-      { x:0.88, y:0.18, vx:-0.00030, vy: 0.00036, r:0.40, ph:5.2 },
-      { x:0.32, y:0.52, vx: 0.00038, vy: 0.00020, r:0.32, ph:2.4 },
+    // God rays — vertical light shafts from top, like Crown title screen
+    const rays = [
+      { x:0.32, w:0.018, al:0.09, ph:0.0,  spd:0.00035 },
+      { x:0.48, w:0.030, al:0.14, ph:1.4,  spd:0.00028 },
+      { x:0.62, w:0.016, al:0.08, ph:2.8,  spd:0.00040 },
+      { x:0.55, w:0.050, al:0.10, ph:0.8,  spd:0.00022 },
+      { x:0.41, w:0.012, al:0.07, ph:3.5,  spd:0.00048 },
+      { x:0.70, w:0.022, al:0.09, ph:2.1,  spd:0.00031 },
+      { x:0.25, w:0.014, al:0.06, ph:4.2,  spd:0.00038 },
     ];
 
-    // Ring clusters
+    // Ambient gold bloom orbs — very dim, deep in background
+    const orbs = [
+      { x:0.50, y:0.00, r:0.55, ph:0.0, vy: 0 },   // top center crown bloom
+      { x:0.18, y:0.55, r:0.30, ph:1.8, vy:-0.00005 },
+      { x:0.85, y:0.45, r:0.28, ph:3.2, vy: 0.00004 },
+    ];
+
+    // Dust motes — tiny gold particles drifting upward
+    const motes = Array.from({length: 55}, () => ({
+      x: Math.random(),
+      y: Math.random(),
+      r: 0.4 + Math.random() * 1.0,
+      vx: (Math.random() - 0.5) * 0.00015,
+      vy: -(0.00012 + Math.random() * 0.00020),
+      ph: Math.random() * TWO_PI,
+      al: 0.15 + Math.random() * 0.35,
+    }));
+
+    // Subtle ring clusters — very dim, background texture only
     const clusters = [
       {
-        cx:0.84, cy:0.22,
+        cx:0.84, cy:0.18,
         rings:[
-          { r:130, spd: 0.0004, ticks:72, tkLen:6, al:0.18 },
-          { r:100, spd:-0.0007, ticks:36, tkLen:5, al:0.22 },
-          { r: 68, spd: 0.0012, ticks:24, tkLen:4, al:0.28 },
-          { r: 38, spd:-0.0020, ticks:12, tkLen:4, al:0.34 },
+          { r:110, spd: 0.0003, ticks:60, tkLen:5, al:0.08 },
+          { r: 72, spd:-0.0006, ticks:30, tkLen:4, al:0.11 },
+          { r: 38, spd: 0.0011, ticks:16, tkLen:3, al:0.14 },
         ],
-        scanSpd:0.0018, scanAl:0.16, scanArc:0.55, angle:0,
+        scanSpd:0.0014, scanAl:0.07, scanArc:0.50, angle:0,
       },
       {
-        cx:0.12, cy:0.72,
+        cx:0.10, cy:0.75,
         rings:[
-          { r:110, spd:-0.0005, ticks:60, tkLen:5, al:0.16 },
-          { r: 80, spd: 0.0009, ticks:30, tkLen:5, al:0.20 },
-          { r: 50, spd:-0.0015, ticks:20, tkLen:4, al:0.26 },
-          { r: 24, spd: 0.0025, ticks:8,  tkLen:3, al:0.32 },
+          { r: 90, spd:-0.0004, ticks:48, tkLen:4, al:0.07 },
+          { r: 55, spd: 0.0008, ticks:24, tkLen:3, al:0.10 },
+          { r: 26, spd:-0.0014, ticks:10, tkLen:3, al:0.13 },
         ],
-        scanSpd:-0.0022, scanAl:0.15, scanArc:0.45, angle:2.1,
-      },
-      {
-        cx:0.50, cy:0.50,
-        rings:[
-          { r:190, spd: 0.0002, ticks:90, tkLen:7, al:0.09 },
-          { r:152, spd:-0.0004, ticks:72, tkLen:6, al:0.12 },
-          { r:112, spd: 0.0006, ticks:48, tkLen:5, al:0.16 },
-          { r: 74, spd:-0.0010, ticks:36, tkLen:5, al:0.21 },
-          { r: 40, spd: 0.0016, ticks:16, tkLen:4, al:0.27 },
-        ],
-        scanSpd:0.0013, scanAl:0.12, scanArc:0.65, angle:4.5,
+        scanSpd:-0.0018, scanAl:0.06, scanArc:0.42, angle:2.1,
       },
     ];
-    // init ring rotations
     clusters.forEach(cl => cl.rings.forEach(r => { r.rot = 0; }));
-
-    // Floating reticles
-    const reticles = [
-      { x:0.65, y:0.35, vx: 0.00020, vy: 0.00014, sz:18, ph:0.0 },
-      { x:0.27, y:0.14, vx:-0.00018, vy: 0.00022, sz:14, ph:1.2 },
-      { x:0.91, y:0.74, vx: 0.00015, vy:-0.00018, sz:22, ph:2.6 },
-      { x:0.42, y:0.88, vx:-0.00022, vy:-0.00012, sz:12, ph:4.1 },
-    ];
-
-    // Data streaks
-    const streaks = Array.from({length:10}, (_, i) => ({
-      y: 0.06 + i * 0.092,
-      x: Math.random(),
-      w: 0.05 + Math.random() * 0.12,
-      ph: Math.random() * TWO_PI,
-      spd: 0.00018 + Math.random() * 0.00022,
-    }));
 
     const drawRing = (cx, cy, ring, rot) => {
       ctx.beginPath();
       ctx.arc(cx, cy, ring.r, 0, TWO_PI);
       ctx.strokeStyle = G(ring.al);
-      ctx.lineWidth = 0.8;
+      ctx.lineWidth = 0.6;
       ctx.stroke();
       for (let i = 0; i < ring.ticks; i++) {
         const angle = rot + (i / ring.ticks) * TWO_PI;
         const major = i % (ring.ticks / 4) === 0;
-        const len = major ? ring.tkLen * 1.8 : ring.tkLen;
-        const al  = major ? Math.min(ring.al * 1.7, 1) : ring.al;
+        const len = major ? ring.tkLen * 1.6 : ring.tkLen;
         ctx.beginPath();
-        ctx.moveTo(cx + Math.cos(angle) * ring.r, cy + Math.sin(angle) * ring.r);
-        ctx.lineTo(cx + Math.cos(angle) * (ring.r - len), cy + Math.sin(angle) * (ring.r - len));
-        ctx.strokeStyle = G(al);
-        ctx.lineWidth = major ? 1.2 : 0.6;
+        ctx.moveTo(cx + Math.cos(angle)*ring.r, cy + Math.sin(angle)*ring.r);
+        ctx.lineTo(cx + Math.cos(angle)*(ring.r-len), cy + Math.sin(angle)*(ring.r-len));
+        ctx.strokeStyle = G(major ? ring.al*1.5 : ring.al);
+        ctx.lineWidth = major ? 0.9 : 0.5;
         ctx.stroke();
       }
     };
 
     const drawScan = (cx, cy, maxR, angle, arc, al) => {
-      const steps = 24;
-      for (let i = 0; i < steps; i++) {
-        const frac = i / steps;
-        const a0 = (angle - arc) + frac * arc;
-        const a1 = (angle - arc) + (frac + 1 / steps) * arc;
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.arc(cx, cy, maxR, a0, a1);
-        ctx.closePath();
-        ctx.fillStyle = G(al * frac * frac);
-        ctx.fill();
+      for (let i = 0; i < 16; i++) {
+        const frac = i/16;
+        const a0 = (angle-arc)+frac*arc, a1 = (angle-arc)+(frac+1/16)*arc;
+        ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,maxR,a0,a1); ctx.closePath();
+        ctx.fillStyle = G(al*frac*frac); ctx.fill();
       }
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + Math.cos(angle) * maxR, cy + Math.sin(angle) * maxR);
-      ctx.strokeStyle = Gw(al * 2.2);
-      ctx.lineWidth = 1.4;
-      ctx.stroke();
-    };
-
-    const drawReticle = (rx, ry, sz, al) => {
-      const h = sz * 0.4, gap = sz * 0.25;
-      ctx.strokeStyle = G(al);
-      ctx.lineWidth = 0.9;
-      [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sy]) => {
-        const ox = rx + sx * gap, oy = ry + sy * gap;
-        ctx.beginPath();
-        ctx.moveTo(ox + sx * h, oy);
-        ctx.lineTo(ox, oy);
-        ctx.lineTo(ox, oy + sy * h);
-        ctx.stroke();
-      });
-      ctx.beginPath();
-      ctx.arc(rx, ry, 1.5, 0, TWO_PI);
-      ctx.fillStyle = G(al * 1.6);
-      ctx.fill();
+      ctx.beginPath(); ctx.moveTo(cx,cy);
+      ctx.lineTo(cx+Math.cos(angle)*maxR, cy+Math.sin(angle)*maxR);
+      ctx.strokeStyle = Gw(al*1.8); ctx.lineWidth = 1.0; ctx.stroke();
     };
 
     let t = 0;
     const draw = () => {
       const W = canvas.width, H = canvas.height;
-      ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(0, 0, W, H);
+      ctx.clearRect(0,0,W,H);
 
-      // Orbs
+      // ── Base: deep black with slight warm vignette center ──
+      ctx.fillStyle = "#0a0804";
+      ctx.fillRect(0,0,W,H);
+
+      // Warm center bloom (crown light source)
+      const bloom = ctx.createRadialGradient(W*0.5,H*0.08,0, W*0.5,H*0.08, H*0.75);
+      bloom.addColorStop(0,   "rgba(180,130,30,0.22)");
+      bloom.addColorStop(0.3, "rgba(140,100,20,0.10)");
+      bloom.addColorStop(1,   "rgba(0,0,0,0)");
+      ctx.fillStyle = bloom; ctx.fillRect(0,0,W,H);
+
+      // ── Orbs ──
       for (const o of orbs) {
-        o.x += o.vx; o.y += o.vy;
-        if (o.x < -0.2) o.vx = Math.abs(o.vx);
-        if (o.x >  1.2) o.vx =-Math.abs(o.vx);
-        if (o.y < -0.2) o.vy = Math.abs(o.vy);
-        if (o.y >  1.2) o.vy =-Math.abs(o.vy);
-        const al = 0.20 + 0.07 * Math.sin(t * 0.0006 + o.ph);
-        const cx = o.x*W, cy = o.y*H, rad = o.r * Math.max(W,H);
+        o.y += o.vy;
+        const al = 0.12 + 0.04 * Math.sin(t*0.0005 + o.ph);
+        const cx=o.x*W, cy=o.y*H, rad=o.r*Math.max(W,H);
         const g = ctx.createRadialGradient(cx,cy,0,cx,cy,rad);
-        g.addColorStop(0,   `rgba(240,210,100,${al})`);
-        g.addColorStop(0.4, `rgba(240,215,110,${al*0.45})`);
-        g.addColorStop(1,   "rgba(240,220,128,0)");
+        g.addColorStop(0, `rgba(200,155,40,${al})`);
+        g.addColorStop(0.5, `rgba(160,120,25,${al*0.3})`);
+        g.addColorStop(1, "rgba(0,0,0,0)");
         ctx.beginPath(); ctx.arc(cx,cy,rad,0,TWO_PI);
-        ctx.fillStyle = g; ctx.fill();
+        ctx.fillStyle=g; ctx.fill();
       }
 
-      // Clusters
+      // ── God rays ──
+      for (const ray of rays) {
+        const al = ray.al * (0.7 + 0.3 * Math.sin(t*ray.spd*400 + ray.ph));
+        const cx = ray.x * W;
+        const rayW = ray.w * W;
+        const grad = ctx.createLinearGradient(cx, 0, cx, H*0.85);
+        grad.addColorStop(0,   `rgba(220,175,60,${al})`);
+        grad.addColorStop(0.25,`rgba(200,155,40,${al*0.6})`);
+        grad.addColorStop(0.7, `rgba(180,130,25,${al*0.15})`);
+        grad.addColorStop(1,   "rgba(0,0,0,0)");
+        ctx.save();
+        ctx.globalAlpha = 1;
+        // slight taper: wide at top, narrow at bottom
+        ctx.beginPath();
+        ctx.moveTo(cx - rayW*1.5, 0);
+        ctx.lineTo(cx + rayW*1.5, 0);
+        ctx.lineTo(cx + rayW*0.3, H*0.85);
+        ctx.lineTo(cx - rayW*0.3, H*0.85);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // ── Dust motes ──
+      for (const m of motes) {
+        m.x += m.vx; m.y += m.vy;
+        if (m.y < -0.01) m.y = 1.01;
+        if (m.x < 0)  m.x = 1;
+        if (m.x > 1)  m.x = 0;
+        const al = m.al * (0.5 + 0.5 * Math.sin(t*0.0018 + m.ph));
+        ctx.beginPath();
+        ctx.arc(m.x*W, m.y*H, m.r, 0, TWO_PI);
+        ctx.fillStyle = Gw(al);
+        ctx.fill();
+      }
+
+      // ── Ring clusters (very subtle) ──
       for (const cl of clusters) {
-        const cx = cl.cx * W, cy = cl.cy * H;
+        const cx=cl.cx*W, cy=cl.cy*H;
         cl.angle += cl.scanSpd;
-        for (const ring of cl.rings) {
-          ring.rot += ring.spd;
-          drawRing(cx, cy, ring, ring.rot);
-        }
+        for (const ring of cl.rings) { ring.rot+=ring.spd; drawRing(cx,cy,ring,ring.rot); }
         drawScan(cx, cy, cl.rings[0].r, cl.angle, cl.scanArc, cl.scanAl);
-        ctx.beginPath(); ctx.arc(cx, cy, 3, 0, TWO_PI);
-        ctx.fillStyle = G(0.5); ctx.fill();
-        ctx.beginPath(); ctx.arc(cx, cy, 1.5, 0, TWO_PI);
-        ctx.fillStyle = Gw(0.9); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx,cy,2,0,TWO_PI);
+        ctx.fillStyle=G(0.4); ctx.fill();
       }
 
-      // Streaks
-      for (const s of streaks) {
-        s.x += s.spd;
-        if (s.x > 1.3) s.x = -0.3;
-        const al = 0.07 + 0.05 * Math.sin(t * 0.002 + s.ph);
-        const sx = s.x*W, sy = s.y*H, sw = s.w*W;
-        const grad = ctx.createLinearGradient(sx,sy,sx+sw,sy);
-        grad.addColorStop(0, G(0));
-        grad.addColorStop(0.3, G(al));
-        grad.addColorStop(0.7, G(al));
-        grad.addColorStop(1, G(0));
-        ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(sx+sw,sy);
-        ctx.strokeStyle = grad; ctx.lineWidth = 0.8; ctx.stroke();
-      }
-
-      // Reticles
-      for (const re of reticles) {
-        re.x += re.vx; re.y += re.vy;
-        if (re.x < 0.02) re.vx = Math.abs(re.vx);
-        if (re.x > 0.98) re.vx =-Math.abs(re.vx);
-        if (re.y < 0.02) re.vy = Math.abs(re.vy);
-        if (re.y > 0.98) re.vy =-Math.abs(re.vy);
-        const al = 0.20 + 0.10 * Math.sin(t * 0.0012 + re.ph);
-        drawReticle(re.x*W, re.y*H, re.sz, al);
-      }
+      // ── Horizon line — faint gold at bottom ──
+      const hz = ctx.createLinearGradient(0, H*0.88, 0, H);
+      hz.addColorStop(0, "rgba(180,140,40,0.12)");
+      hz.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle=hz; ctx.fillRect(0,H*0.88,W,H*0.12);
 
       t++;
       raf = requestAnimationFrame(draw);
     };
     draw();
-    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize",resize); };
   }, []);
 
   return <canvas ref={canvasRef} style={{position:"fixed",inset:0,width:"100%",height:"100%",zIndex:0,pointerEvents:"none"}}/>;
@@ -445,27 +423,27 @@ export default function App() {
 
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-        /* ── Theme: Pearl (default) — white base, pale gold light ── */
+        /* ── Theme: Crown — deep black, warm gold ── */
         :root {
-          --G:          #F0DC80;
-          --Gr:         240,220,128;     /* RGB triplet for rgba() use */
-          --Gdim:       rgba(240,220,128,0.18);
-          --Glo:        rgba(240,220,128,0.65);
-          --bg:         #ffffff;
-          --card-bg:    rgba(255,255,255,0.52);
-          --card-hover: rgba(255,255,255,0.72);
-          --sidebar-bg: rgba(255,255,255,0.68);
-          --border:     rgba(240,220,128,0.22);
-          --text:       #111111;
-          --text-mid:   #555555;
-          --dim:        #999999;
-          --dim2:       #cccccc;
-          --nav-active-bg: rgba(240,220,128,0.10);
-          --nav-active-text: #111;
+          --G:          #D4AF5A;
+          --Gr:         212,175,90;
+          --Gdim:       rgba(212,175,90,0.18);
+          --Glo:        rgba(212,175,90,0.65);
+          --bg:         #0a0804;
+          --card-bg:    rgba(18,14,8,0.72);
+          --card-hover: rgba(26,20,10,0.88);
+          --sidebar-bg: rgba(12,10,5,0.82);
+          --border:     rgba(212,175,90,0.20);
+          --text:       #f0e8d0;
+          --text-mid:   #a89878;
+          --dim:        #6a5f4a;
+          --dim2:       #3a3328;
+          --nav-active-bg: rgba(212,175,90,0.10);
+          --nav-active-text: #f0e8d0;
           --mono: 'DM Mono', monospace;
         }
 
-        html, body { background: var(--bg); }
+        html, body { background: #0a0804; }
         body {
           font-family: 'DM Sans', sans-serif;
           -webkit-font-smoothing: antialiased;
@@ -514,11 +492,11 @@ export default function App() {
           width: 1px;
           background: linear-gradient(180deg,
             transparent,
-            rgba(240,220,128,0.5) 20%,
-            rgba(240,220,128,0.9) 50%,
-            rgba(240,220,128,0.5) 80%,
+            rgba(212,175,90,0.4) 20%,
+            rgba(212,175,90,0.85) 50%,
+            rgba(212,175,90,0.4) 80%,
             transparent);
-          filter: drop-shadow(0 0 6px rgba(240,220,128,0.7));
+          filter: drop-shadow(0 0 8px rgba(212,175,90,0.6));
         }
 
         /* Guild name + meta at top of sidebar */
@@ -793,9 +771,11 @@ export default function App() {
           background: var(--card-hover);
           border-color: rgba(var(--Gr),0.55);
           box-shadow:
-            inset 0 0 60px rgba(240,220,128,0.06),
-            0 0 0 1px rgba(240,220,128,0.14),
-            0 8px 32px rgba(240,220,128,0.12);
+            inset 0 0 60px rgba(212,175,90,0.08),
+            inset 0 -30px 40px rgba(212,175,90,0.05),
+            0 0 0 1px rgba(212,175,90,0.18),
+            0 8px 32px rgba(0,0,0,0.6),
+            0 0 24px rgba(212,175,90,0.10);
           transform: translateY(-3px);
         }
 
@@ -850,14 +830,16 @@ export default function App() {
           100% { transform: translate(var(--tx), -140px)  scaleY(0.3); opacity: 0;   }
         }
 
-        /* ── Main card hover — full bloom ── */
+        /* ── Main card hover — Crown bloom ── */
         .prism.is-main:hover, .prism.is-main.sel {
-          border-color: rgba(240,220,128,0.90);
+          border-color: rgba(212,175,90,0.90);
           box-shadow:
-            0 0 0 1px rgba(240,220,128,0.55),
-            0 0 32px rgba(240,220,128,0.28),
-            0 0 60px rgba(240,220,128,0.12),
-            inset 0 0 40px rgba(240,220,128,0.09);
+            0 0 0 1px rgba(212,175,90,0.60),
+            0 0 40px rgba(212,175,90,0.32),
+            0 0 80px rgba(212,175,90,0.14),
+            0 0 120px rgba(180,140,50,0.08),
+            inset 0 0 50px rgba(212,175,90,0.10),
+            inset 0 -40px 60px rgba(212,175,90,0.06);
           animation: rise .38s ease forwards;
         }
 
@@ -947,16 +929,16 @@ export default function App() {
         .prism-sprite-wrap::before {
           left: 0;
           background: linear-gradient(to right,
-            rgba(255,255,255,0.72) 0%,
-            rgba(255,255,255,0.38) 40%,
+            rgba(10,8,4,0.80) 0%,
+            rgba(10,8,4,0.40) 40%,
             transparent 100%);
         }
         /* Right vignette */
         .prism-sprite-wrap::after {
           right: 0;
           background: linear-gradient(to left,
-            rgba(255,255,255,0.72) 0%,
-            rgba(255,255,255,0.38) 40%,
+            rgba(10,8,4,0.80) 0%,
+            rgba(10,8,4,0.40) 40%,
             transparent 100%);
         }
         /* On hover, soften the vignettes so we see more of the sprite */
