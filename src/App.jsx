@@ -288,28 +288,28 @@ function PrismCard({ char, index, isSel, isHov, onClick, onEnter, onLeave }) {
           stroke={G} strokeWidth={lit ? "1.5" : "0.8"}
           opacity={edgeOpacity}
           filter={`url(#eg${index})`}
-          style={{ transition: "opacity .35s ease, stroke-width .35s ease" }}
+          style={{ transition: "opacity .15s ease, stroke-width .15s ease" }}
         />
         {/* Top edge */}
         <line x1="0" y1="0" x2="100" y2="0"
           stroke={G} strokeWidth={lit ? "1.2" : "0.7"}
           opacity={edgeOpacity * 0.85}
           filter={`url(#eg${index})`}
-          style={{ transition: "opacity .35s ease, stroke-width .35s ease" }}
+          style={{ transition: "opacity .15s ease, stroke-width .15s ease" }}
         />
         {/* Right edge — subtler, suggests depth */}
         <line x1="100" y1="0" x2="100" y2="160"
           stroke={G} strokeWidth={lit ? "0.9" : "0.5"}
           opacity={edgeOpacity * 0.6}
           filter={`url(#eg${index})`}
-          style={{ transition: "opacity .35s ease, stroke-width .35s ease" }}
+          style={{ transition: "opacity .15s ease, stroke-width .15s ease" }}
         />
         {/* Bottom edge */}
         <line x1="0" y1="160" x2="100" y2="160"
           stroke={G} strokeWidth={lit ? "1.0" : "0.6"}
           opacity={edgeOpacity * 0.7}
           filter={`url(#eg${index})`}
-          style={{ transition: "opacity .35s ease, stroke-width .35s ease" }}
+          style={{ transition: "opacity .15s ease, stroke-width .15s ease" }}
         />
 
         {/* Corner nodes — where edges meet */}
@@ -320,7 +320,7 @@ function PrismCard({ char, index, isSel, isHov, onClick, onEnter, onLeave }) {
             fill={G}
             opacity={lit ? 0.95 : 0.25}
             filter={lit ? `url(#eg${index})` : undefined}
-            style={{ transition: "opacity .35s ease" }}
+            style={{ transition: "opacity .15s ease" }}
           />
         ))}
 
@@ -331,7 +331,7 @@ function PrismCard({ char, index, isSel, isHov, onClick, onEnter, onLeave }) {
             opacity={lit ? 0.45 : 0.08}
             filter={`url(#eg${index})`}
             strokeDasharray={lit ? "none" : "4 6"}
-            style={{ transition: "opacity .35s ease, stroke-width .35s ease" }}
+            style={{ transition: "opacity .15s ease, stroke-width .15s ease" }}
           />
         )}
 
@@ -340,13 +340,13 @@ function PrismCard({ char, index, isSel, isHov, onClick, onEnter, onLeave }) {
           stroke={G} strokeWidth={lit ? "0.8" : "0.4"}
           opacity={lit ? 0.50 : 0.10}
           filter={`url(#eg${index})`}
-          style={{ transition: "opacity .35s ease, stroke-width .35s ease" }}
+          style={{ transition: "opacity .15s ease, stroke-width .15s ease" }}
         />
         {/* Node on the divider — left side */}
         <rect x="0" y="70" width="3" height="3"
           fill={G} opacity={lit ? 0.8 : 0.15}
           filter={lit ? `url(#eg${index})` : undefined}
-          style={{ transition: "opacity .35s ease" }}
+          style={{ transition: "opacity .15s ease" }}
         />
       </svg>
 
@@ -354,7 +354,7 @@ function PrismCard({ char, index, isSel, isHov, onClick, onEnter, onLeave }) {
       <div className="prism-glow" style={{
         background: `radial-gradient(ellipse 80% 60% at 50% 35%,
           rgba(240,220,128,${lit ? "0.07" : "0.02"}) 0%, transparent 70%)`,
-        transition: "background .4s ease",
+        transition: "background .18s ease",
       }}/>
 
       {/* ── Card content ── */}
@@ -383,7 +383,7 @@ function PrismCard({ char, index, isSel, isHov, onClick, onEnter, onLeave }) {
           <div className="prism-tier" style={{
             color: lit ? tier.lit : tier.dim,
             filter: lit ? `drop-shadow(0 0 5px ${tier.lit})` : "none",
-            transition: "color .3s, filter .3s",
+            transition: "color .12s, filter .12s",
           }}>
             {tier.label}
           </div>
@@ -394,7 +394,7 @@ function PrismCard({ char, index, isSel, isHov, onClick, onEnter, onLeave }) {
             <span className="prism-lv-n" style={{
               color: lit ? G : "#1a1a1a",
               filter: lit ? `drop-shadow(0 0 8px ${G_GLOW})` : "none",
-              transition: "color .3s, filter .3s",
+              transition: "color .12s, filter .12s",
             }}>{char.level}</span>
           </div>
         </div>
@@ -404,14 +404,14 @@ function PrismCard({ char, index, isSel, isHov, onClick, onEnter, onLeave }) {
       {char.badge === "Main" && (
         <div className="prism-particles" aria-hidden="true">
           {[
-            { tx: "-8px",  delay: "0.0s", dur: "1.6s", left: "22%" },
-            { tx:  "5px",  delay: "0.3s", dur: "1.9s", left: "38%" },
-            { tx: "-4px",  delay: "0.7s", dur: "1.4s", left: "50%" },
-            { tx:  "9px",  delay: "0.2s", dur: "2.0s", left: "62%" },
-            { tx: "-6px",  delay: "0.9s", dur: "1.7s", left: "74%" },
-            { tx:  "3px",  delay: "0.5s", dur: "1.5s", left: "30%" },
-            { tx: "-10px", delay: "1.1s", dur: "1.8s", left: "58%" },
-            { tx:  "7px",  delay: "0.4s", dur: "1.6s", left: "44%" },
+            { tx: "-8px",  delay: "0.0s", dur: "1.0s", left: "22%" },
+            { tx:  "5px",  delay: "0.3s", dur: "1.1s", left: "38%" },
+            { tx: "-4px",  delay: "0.7s", dur: "0.9s", left: "50%" },
+            { tx:  "9px",  delay: "0.2s", dur: "1.2s", left: "62%" },
+            { tx: "-6px",  delay: "0.9s", dur: "1.0s", left: "74%" },
+            { tx:  "3px",  delay: "0.5s", dur: "0.9s", left: "30%" },
+            { tx: "-10px", delay: "1.1s", dur: "1.1s", left: "58%" },
+            { tx:  "7px",  delay: "0.4s", dur: "1.0s", left: "44%" },
           ].map((p, i) => (
             <div key={i} className="particle" style={{
               left: p.left,
@@ -626,10 +626,9 @@ export default function CharSelect() {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
           /* Column gap must be wider than the sprite side overflow to prevent overlap */
-          gap: 24px;
-          /* Top padding = sprite overflow height so first row has room */
-          padding-top: 100px;
-          /* Side padding mirrors column gap so edge cards don't clip */
+          column-gap: 24px;
+          row-gap: 120px;          /* sprites are ~200px tall, need room between rows */
+          padding-top: 110px;      /* headroom for first row overflow */
           padding-left: 4px;
           padding-right: 4px;
         }
@@ -645,7 +644,7 @@ export default function CharSelect() {
           overflow: visible;
           opacity: 0;
           animation: rise .38s ease forwards;
-          transition: border-color .28s ease, box-shadow .28s ease, transform .22s ease;
+          transition: border-color .12s ease, box-shadow .12s ease, transform .10s ease;
           /* Each hovered card rises above its neighbours */
           z-index: 1;
         }
@@ -753,7 +752,7 @@ export default function CharSelect() {
         .prism-sprite-wrap {
           position: relative;
           width: 100%;
-          height: 90px;           /* visible zone inside the card border */
+          height: 110px;          /* visible zone inside the card border */
           display: flex;
           align-items: flex-end;
           justify-content: center;
@@ -772,7 +771,7 @@ export default function CharSelect() {
           bottom: 0;
           filter: drop-shadow(0 6px 14px rgba(0,0,0,0.22))
                   drop-shadow(0 1px 3px rgba(0,0,0,0.14));
-          transition: filter .30s ease, transform .30s ease;
+          transition: filter .12s ease, transform .12s ease;
           pointer-events: none;
           z-index: 4;
         }
@@ -800,7 +799,7 @@ export default function CharSelect() {
         .prism-sprite-wrap::after {
           content: '';
           position: absolute;
-          top: -110px;            /* reach up to cover the full sprite height */
+          top: -100px;            /* reach up to cover the full sprite height */
           bottom: 0;
           width: 28%;
           pointer-events: none;
@@ -874,7 +873,7 @@ export default function CharSelect() {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          transition: letter-spacing .3s ease, filter .3s ease, color .3s ease;
+          transition: letter-spacing .12s ease, filter .12s ease, color .12s ease;
         }
         .prism:hover .prism-name,
         .prism.sel   .prism-name {
