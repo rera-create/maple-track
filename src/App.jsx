@@ -12,15 +12,7 @@ function Background() {
     window.addEventListener("resize", resize);
     const PI2 = Math.PI * 2;
 
-    const dust = Array.from({length: 80}, () => ({
-      x:  Math.random(),
-      y:  Math.random(),
-      r:  0.3 + Math.random() * 0.7,
-      vx: (Math.random() - 0.5) * 0.00008,
-      vy: -(0.00015 + Math.random() * 0.00025),
-      ph: Math.random() * PI2,
-      al: 0.04 + Math.random() * 0.18,
-    }));
+    // no dust here — rendered in SidebarDust component above sidebar
 
     let t = 0;
     const draw = () => {
@@ -36,16 +28,64 @@ function Background() {
       warm.addColorStop(1,  "rgba(0,0,0,0)");
       ctx.fillStyle = warm; ctx.fillRect(0, 0, W, H);
 
-      // Dust
+
+
+      t++;
+      raf = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
+  }, []);
+  return <canvas ref={canvasRef} style={{position:"fixed",inset:0,width:"100%",height:"100%",zIndex:0,pointerEvents:"none"}}/>;
+}
+
+
+// ── Dust canvas rendered inside the sidebar, above sidebar content ────────────
+function SidebarDust() {
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    let raf;
+    const resize = () => {
+      canvas.width  = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    };
+    resize();
+    window.addEventListener("resize", resize);
+    const PI2 = Math.PI * 2;
+
+    const dust = Array.from({length: 55}, () => ({
+      x:  Math.random(),
+      y:  Math.random(),
+      r:  0.2 + Math.random() * 0.55,
+      vx: (Math.random() - 0.5) * 0.00008,
+      vy: -(0.00014 + Math.random() * 0.00024),
+      ph: Math.random() * PI2,
+      al: 0.06 + Math.random() * 0.22,
+    }));
+
+    let t = 0;
+    const draw = () => {
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
       for (const d of dust) {
         d.x += d.vx; d.y += d.vy;
         if (d.y < -0.01) { d.y = 1.01; d.x = Math.random(); }
         if (d.x < 0) d.x = 1; if (d.x > 1) d.x = 0;
-        const al = d.al * (0.4 + 0.6 * Math.sin(t * 0.0020 + d.ph));
-        if (al < 0.01) continue;
+
+        // Brighter near the two light bars (top: 22px, bottom: 22px)
+        const nearTop = Math.max(0, 1 - Math.abs(d.y * H - 22)  / 80);
+        const nearBtm = Math.max(0, 1 - Math.abs(d.y * H - (H - 22)) / 80);
+        const boost   = 1 + (nearTop + nearBtm) * 2.8;
+        const shimmer = 0.35 + 0.65 * Math.sin(t * 0.0020 + d.ph);
+        const al = d.al * shimmer * boost;
+        if (al < 0.008) continue;
+
         ctx.beginPath();
         ctx.arc(d.x * W, d.y * H, d.r, 0, PI2);
-        ctx.fillStyle = `rgba(255,254,227,${Math.min(al, 0.65)})`;
+        ctx.fillStyle = `rgba(255,254,227,${Math.min(al, 0.78)})`;
         ctx.fill();
       }
 
@@ -55,7 +95,16 @@ function Background() {
     draw();
     return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
   }, []);
-  return <canvas ref={canvasRef} style={{position:"fixed",inset:0,width:"100%",height:"100%",zIndex:0,pointerEvents:"none"}}/>;
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: "absolute", inset: 0,
+        width: "100%", height: "100%",
+        zIndex: 5, pointerEvents: "none",
+      }}
+    />
+  );
 }
 
 // Swap this for your R2 public bucket URL when ready
@@ -1111,7 +1160,7 @@ export default function App() {
         <div className="layout">
 
           {/* ── Left: Sidebar dashboard ── */}
-          <aside className={`sidebar ${mounted ? "in" : ""}`}><div className="sidebar-floor"/>
+          <aside className={`sidebar ${mounted ? "in" : ""}`}><div className="sidebar-floor"/><SidebarDust/>
             <div className="sidebar-hdr">
               <div className="sidebar-eyebrow">Bera · AbyssGuild</div>
               <div className="sidebar-name">Abyss<br/>Guild</div>
