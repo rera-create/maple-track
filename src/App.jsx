@@ -59,75 +59,100 @@ function Background() {
       ctx.fillRect(0, 0, W, H * 0.40);
 
       // ════════════════════════════════════════════════════════════════════════
-      // BOTTOM — horizontal slit with light bursting through it
-      // Brightest at horizontal centre, fades left/right
-      // The "cut" sits just above the very bottom edge
+      // BOTTOM — event horizon burst. Fixed at bottom of viewport.
+      // Near-white #FFFEE3 core, gold bloom radiating upward and outward.
+      // Multiple layers: deep field fill → radial corona → 
+      //   vertical beam → hot line → above-line glow → floor fill
       // ════════════════════════════════════════════════════════════════════════
-      const slitY = H * 0.915;  // where the slit sits
-      const slitH = 3;          // thickness of the slit itself
+      const ehY = H - 42;   // event horizon Y position
 
-      // Horizontal radial: bright white-gold at center, dims toward edges
-      // Simulated with a left-right linear gradient on the slit rect
-      const slitH_grad = ctx.createLinearGradient(0, 0, W, 0);
-      slitH_grad.addColorStop(0,    "rgba(185,175,148,0.12)");
-      slitH_grad.addColorStop(0.25, "rgba(210,200,175,0.45)");
-      slitH_grad.addColorStop(0.45, "rgba(238,228,205,0.80)");
-      slitH_grad.addColorStop(0.50, "rgba(245,238,218,0.92)"); // peak centre
-      slitH_grad.addColorStop(0.55, "rgba(238,228,205,0.80)");
-      slitH_grad.addColorStop(0.75, "rgba(210,200,175,0.45)");
-      slitH_grad.addColorStop(1,    "rgba(185,175,148,0.12)");
-      ctx.fillStyle = slitH_grad;
-      ctx.fillRect(0, slitY, W, slitH);
+      // 1. Deep field — fills the whole lower 65% with faint warm light
+      //    This is the "gravity well" — light bending toward the horizon
+      const field = ctx.createLinearGradient(0, H, 0, H * 0.35);
+      field.addColorStop(0,    "rgba(255,254,227,0.18)");
+      field.addColorStop(0.12, "rgba(240,220,140,0.12)");
+      field.addColorStop(0.35, "rgba(220,195,100,0.05)");
+      field.addColorStop(0.65, "rgba(195,168,72,0.012)");
+      field.addColorStop(1,    "rgba(0,0,0,0)");
+      ctx.fillStyle = field;
+      ctx.fillRect(0, H * 0.35, W, H * 0.65);
 
-      // Burst bloom upward from the slit — center-weighted
-      // Layer 1: wide gentle fill
-      const burstWide = ctx.createLinearGradient(0, slitY, 0, H * 0.25);
-      burstWide.addColorStop(0,   "rgba(195,185,160,0.20)");
-      burstWide.addColorStop(0.15,"rgba(175,168,145,0.10)");
-      burstWide.addColorStop(0.40,"rgba(152,146,125,0.035)");
-      burstWide.addColorStop(0.70,"rgba(122,116, 98,0.008)");
-      burstWide.addColorStop(1,   "rgba(0,0,0,0)");
-      ctx.fillStyle = burstWide;
-      ctx.fillRect(0, H * 0.25, W, slitY - H * 0.25);
-
-      // Layer 2: center-column burst — extra bright cone rising from slit center
-      const bx = W * 0.5;
-      const burstCone = ctx.createRadialGradient(bx, slitY, 0, bx, slitY, W * 0.55);
-      burstCone.addColorStop(0,    "rgba(205,195,168,0.22)");
-      burstCone.addColorStop(0.20, "rgba(185,178,155,0.10)");
-      burstCone.addColorStop(0.50, "rgba(158,152,130,0.028)");
-      burstCone.addColorStop(1,    "rgba(0,0,0,0)");
-      ctx.fillStyle = burstCone;
+      // 2. Corona — radial burst centered on horizon, strong upward reach
+      //    Brighter at centre horizontally — like a star behind the horizon
+      const cx2 = W * 0.5;
+      const corona = ctx.createRadialGradient(cx2, ehY, 0, cx2, ehY, W * 0.70);
+      corona.addColorStop(0,    "rgba(255,254,227,0.45)");
+      corona.addColorStop(0.08, "rgba(252,240,175,0.28)");
+      corona.addColorStop(0.22, "rgba(240,215,120,0.12)");
+      corona.addColorStop(0.45, "rgba(218,188,82,0.04)");
+      corona.addColorStop(1,    "rgba(0,0,0,0)");
+      ctx.fillStyle = corona;
       ctx.fillRect(0, 0, W, H);
 
-      // Dense pool right below the slit — floor glow
-      const floorPool = ctx.createLinearGradient(0, slitY, 0, H);
-      floorPool.addColorStop(0,   "rgba(205,195,168,0.38)");
-      floorPool.addColorStop(0.4, "rgba(185,178,155,0.20)");
-      floorPool.addColorStop(1,   "rgba(162,155,132,0.12)");
-      ctx.fillStyle = floorPool;
-      ctx.fillRect(0, slitY, W, H - slitY);
+      // 3. Vertical beam — bright upward column from centre of horizon
+      //    The light that "escapes" straight up through the crack
+      const beamW = W * 0.35;
+      const beam = ctx.createLinearGradient(0, ehY, 0, H * 0.20);
+      beam.addColorStop(0,    "rgba(255,254,227,0.22)");
+      beam.addColorStop(0.20, "rgba(252,244,200,0.10)");
+      beam.addColorStop(0.55, "rgba(240,220,145,0.03)");
+      beam.addColorStop(1,    "rgba(0,0,0,0)");
+      const beamLR = ctx.createLinearGradient(cx2 - beamW, 0, cx2 + beamW, 0);
+      beamLR.addColorStop(0,    "rgba(0,0,0,0)");
+      beamLR.addColorStop(0.25, "rgba(255,254,227,0.55)");
+      beamLR.addColorStop(0.50, "rgba(255,254,227,1.00)");
+      beamLR.addColorStop(0.75, "rgba(255,254,227,0.55)");
+      beamLR.addColorStop(1,    "rgba(0,0,0,0)");
+      // Draw beam: vertical fade rect, then mask horizontally via globalAlpha trick
+      // Use two overlapping fills: one vertical, one horizontal
+      ctx.save();
+      ctx.globalAlpha = 0.18;
+      ctx.fillStyle = beam;
+      ctx.fillRect(cx2 - beamW, H * 0.20, beamW * 2, ehY - H * 0.20);
+      ctx.restore();
 
-      // ════════════════════════════════════════════════════════════════════════
-      // DUST — simple tiny pinpoints, brightest near bottom light
-      // ════════════════════════════════════════════════════════════════════════
+      // 4. Immediate above-horizon glow — compressed bright band just above line
+      const aboveGlow = ctx.createLinearGradient(0, ehY - 55, 0, ehY);
+      aboveGlow.addColorStop(0,    "rgba(0,0,0,0)");
+      aboveGlow.addColorStop(0.45, "rgba(252,244,195,0.08)");
+      aboveGlow.addColorStop(0.78, "rgba(255,252,215,0.28)");
+      aboveGlow.addColorStop(1,    "rgba(255,254,227,0.55)");
+      ctx.fillStyle = aboveGlow;
+      ctx.fillRect(0, ehY - 55, W, 55);
+
+      // 5. The horizon line itself — #FFFEE3 near-white core, gold toward edges
+      //    6px tall, peaks at centre with horizontal gradient
+      const hLine = ctx.createLinearGradient(0, 0, W, 0);
+      hLine.addColorStop(0,    "rgba(195,158,55,0.05)");
+      hLine.addColorStop(0.15, "rgba(235,205,110,0.60)");
+      hLine.addColorStop(0.38, "rgba(252,246,210,0.92)");
+      hLine.addColorStop(0.50, "rgba(255,254,227,1.00)");  // #FFFEE3 peak
+      hLine.addColorStop(0.62, "rgba(252,246,210,0.92)");
+      hLine.addColorStop(0.85, "rgba(235,205,110,0.60)");
+      hLine.addColorStop(1,    "rgba(195,158,55,0.05)");
+      ctx.fillStyle = hLine;
+      ctx.fillRect(0, ehY - 1, W, 6);
+
+      // 6. Floor fill — dense gold below the line, darkens toward bottom edge
+      const floor = ctx.createLinearGradient(0, ehY, 0, H);
+      floor.addColorStop(0,    "rgba(255,254,227,0.65)");
+      floor.addColorStop(0.15, "rgba(245,225,140,0.42)");
+      floor.addColorStop(0.45, "rgba(225,195,90,0.22)");
+      floor.addColorStop(1,    "rgba(195,162,55,0.10)");
+      ctx.fillStyle = floor;
+      ctx.fillRect(0, ehY, W, H - ehY);
+
+      // ── Dust — simple drifting pinpoints ─────────────────────────────────────
       for (const d of dust) {
         d.x += d.vx; d.y += d.vy;
         if (d.y < -0.01) { d.y = 1.01; d.x = Math.random(); }
         if (d.x < 0) d.x = 1;
         if (d.x > 1) d.x = 0;
-
-        // Brighter near the bottom slit and top seam
-        const nearBottom = Math.max(0, 1 - Math.abs(d.y - 0.91) / 0.35);
-        const nearTop    = Math.max(0, 1 - d.y / 0.30);
-        const envBoost   = Math.max(nearBottom, nearTop * 0.5);
-        const shimmer    = 0.4 + 0.6 * Math.sin(t * 0.0020 + d.ph);
-        const al         = (d.al + envBoost * 0.35) * shimmer;
-
+        const al = d.al * (0.4 + 0.6 * Math.sin(t * 0.0020 + d.ph));
         if (al < 0.012) continue;
         ctx.beginPath();
         ctx.arc(d.x * W, d.y * H, d.r, 0, PI2);
-        ctx.fillStyle = `rgba(225,220,205,${Math.min(al, 0.85)})`;
+        ctx.fillStyle = `rgba(255,254,227,${Math.min(al, 0.70)})`;
         ctx.fill();
       }
 
@@ -366,6 +391,18 @@ export default function App() {
   const filtered = characters.filter(c => filter === "All" || c.badge === filter);
   const sel = selected;
 
+  // Lock page scroll — bar must stay fixed at viewport bottom
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.height = '100%';
+    document.body.style.height = '100%';
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, []);
+
   return (
     <>
       <style>{`
@@ -393,7 +430,7 @@ export default function App() {
           --mono: 'DM Mono', monospace;
         }
 
-        html, body { background: #0a0804; margin:0; padding:0; overflow:hidden; height:100%; }
+        html, body { background: #0a0804; margin:0; padding:0; overflow:hidden; height:100vh; }
         body {
           font-family: 'DM Sans', sans-serif;
           -webkit-font-smoothing: antialiased;
@@ -403,10 +440,11 @@ export default function App() {
 
         /* Root transparent so canvas orbs show through */
         .root {
-          min-height: 100vh;
+          height: 100vh;
           background: transparent;
           position: relative;
           z-index: 1;
+          overflow: hidden;
         }
 
         /* ── Root layout — full viewport, two columns ── */
@@ -421,7 +459,7 @@ export default function App() {
         .sidebar {
           width: 380px;
           min-width: 380px;
-          min-height: 100vh;
+          height: 100vh;
           background: var(--sidebar-bg);
           backdrop-filter: blur(24px);
           -webkit-backdrop-filter: blur(24px);
@@ -623,9 +661,11 @@ export default function App() {
         /* ── Right panel — cards + detail ── */
         .content {
           flex: 1;
+          height: 100vh;
           min-width: 0;
           padding: 40px 48px 80px 52px;
           overflow-y: auto;
+          box-sizing: border-box;
           opacity: 0; transform: translateY(8px);
           transition: opacity .45s .1s ease, transform .45s .1s ease;
         }
@@ -1138,7 +1178,7 @@ export default function App() {
         ::-webkit-scrollbar-thumb { background: rgba(var(--Gr),0.25); }
       `}</style>
 
-      <div className="root">
+      <div className="root" style={{height:"100vh",overflow:"hidden",position:"relative"}}>
         <Background/>
 
         <div className="layout">
