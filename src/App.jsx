@@ -73,28 +73,25 @@ function Background() {
       ctx.save();
       ctx.globalAlpha = 1;
       for (let i = 0; i < rayXPositions.length; i++) {
-        const cx  = rayXPositions[i] * W;
+        const cx    = rayXPositions[i] * W;
         const reach = H * (.25 + (i===5 ? .35 : i%3===0 ? .18 : .10));
-        // Very faint line — not a shape, just a gradient stroke
-        const lg = ctx.createLinearGradient(cx,0,cx,reach);
+        // Core ray — 1.5px wide filled rect with vertical gradient (strokeStyle rejects gradients)
+        const lg = ctx.createLinearGradient(cx, 0, cx, reach);
         lg.addColorStop(0,   "rgba(255,245,185,0.28)");
         lg.addColorStop(.12, "rgba(230,195, 80,0.10)");
         lg.addColorStop(.40, "rgba(200,162, 45,0.03)");
         lg.addColorStop(1,   "rgba(0,0,0,0)");
-        ctx.beginPath();
-        ctx.moveTo(cx,0); ctx.lineTo(cx,reach);
-        ctx.strokeStyle = lg;
-        ctx.lineWidth = 1.2;
-        ctx.stroke();
-        // Tiny halo around each ray — very faint, narrow
+        ctx.fillStyle = lg;
+        ctx.fillRect(cx - 0.75, 0, 1.5, reach);
+        // Soft halo — narrow trapezoid, very faint
         const hazeW = W * .008;
-        const haze  = ctx.createLinearGradient(cx,0,cx,reach*.6);
+        const haze  = ctx.createLinearGradient(cx, 0, cx, reach * .6);
         haze.addColorStop(0,  "rgba(210,172,58,0.06)");
         haze.addColorStop(1,  "rgba(0,0,0,0)");
         ctx.beginPath();
         ctx.moveTo(cx-hazeW,0); ctx.lineTo(cx+hazeW,0);
         ctx.lineTo(cx+hazeW*.1,reach*.6); ctx.lineTo(cx-hazeW*.1,reach*.6);
-        ctx.closePath(); ctx.fillStyle=haze; ctx.fill();
+        ctx.closePath(); ctx.fillStyle = haze; ctx.fill();
       }
       ctx.restore();
 
@@ -132,30 +129,32 @@ function Background() {
       ctx.save();
       for (const d of dust) {
         d.x += d.vx; d.y += d.vy;
-        if (d.y < -.01) { d.y=1.01; d.x=Math.random(); }
-        if (d.x<0) d.x=1; if (d.x>1) d.x=0;
+        if (d.y < -.01) { d.y = 1.01; d.x = Math.random(); }
+        if (d.x < 0) d.x = 1; if (d.x > 1) d.x = 0;
 
-        // Illumination from top and bottom bloom zones
-        const tl = Math.max(0, 1 - d.y/.45) * .6;
-        const bl = Math.max(0, Math.pow(1-(1-d.y)/.55, 1.3));
-        const env = Math.max(tl, bl);
-        const shimmer = .30 + .70 * Math.sin(t*.0018+d.ph);
-        const al = (d.base + env*d.lit) * shimmer;
-        if (al < .008) continue;
+        // Illumination: how much top/bottom bloom reaches this particle
+        const tl  = d.y < .45 ? (1 - d.y / .45) * .6 : 0;
+        const bl  = d.y > .45 ? (1 - (1 - d.y) / .55) : 0;
+        const env = tl > bl ? tl : bl;
+        const shimmer = .30 + .70 * Math.sin(t * .0018 + d.ph);
+        const al = (d.base + env * d.lit) * shimmer;
+        if (!isFinite(al) || al < .008) continue;
 
-        // Draw as a soft ellipse with blur-like feathered edge
-        // Uses radial gradient to fake soft focus — real dust look
+        const a0 = Math.min(al, .72);
+        const a1 = Math.min(al * .38, .28);
+
         ctx.save();
-        ctx.translate(d.x*W, d.y*H);
-        ctx.rotate(d.rot + t*.0004); // very slow rotation
-        const grd = ctx.createRadialGradient(0,0,0, 0,0,Math.max(d.rx,d.ry)*2.5);
-        // Warm tan/cream color — not yellow, not white
-        grd.addColorStop(0,   `rgba(225,205,155,${Math.min(al,.75)})`);
-        grd.addColorStop(0.5, `rgba(210,188,130,${Math.min(al*.4,.30)})`);
-        grd.addColorStop(1,   "rgba(0,0,0,0)");
+        ctx.translate(d.x * W, d.y * H);
+        const maxR = Math.max(d.rx, d.ry) * 2.5;
+        const grd  = ctx.createRadialGradient(0, 0, 0, 0, 0, maxR);
+        grd.addColorStop(0,   `rgba(222,202,152,${a0})`);
+        grd.addColorStop(0.5, `rgba(208,185,128,${a1})`);
+        grd.addColorStop(1,    "rgba(0,0,0,0)");
         ctx.scale(d.rx, d.ry);
-        ctx.beginPath(); ctx.arc(0,0,2.5,0,PI2);
-        ctx.fillStyle = grd; ctx.fill();
+        ctx.beginPath();
+        ctx.arc(0, 0, 2.5, 0, PI2);
+        ctx.fillStyle = grd;
+        ctx.fill();
         ctx.restore();
       }
       ctx.restore();
