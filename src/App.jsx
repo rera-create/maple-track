@@ -55,14 +55,14 @@ function SidebarDust() {
     window.addEventListener("resize", resize);
     const PI2 = Math.PI * 2;
 
-    const dust = Array.from({length: 55}, () => ({
+    const dust = Array.from({length: 120}, () => ({
       x:  Math.random(),
       y:  Math.random(),
       r:  0.2 + Math.random() * 0.55,
       vx: (Math.random() - 0.5) * 0.00008,
       vy: -(0.00014 + Math.random() * 0.00024),
       ph: Math.random() * PI2,
-      al: 0.06 + Math.random() * 0.22,
+      al: 0.10 + Math.random() * 0.35,
     }));
 
     let t = 0;
@@ -85,7 +85,7 @@ function SidebarDust() {
 
         ctx.beginPath();
         ctx.arc(d.x * W, d.y * H, d.r, 0, PI2);
-        ctx.fillStyle = `rgba(255,254,227,${Math.min(al, 0.78)})`;
+        ctx.fillStyle = `rgba(255,254,227,${Math.min(al, 0.90)})`;
         ctx.fill();
       }
 
