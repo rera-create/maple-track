@@ -107,6 +107,298 @@ function SidebarDust() {
   );
 }
 
+
+// ── Magic circle — extravagant, shining, with color ─────────────────────────
+function Circuitry() {
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    let raf;
+    const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
+    resize();
+    window.addEventListener("resize", resize);
+    const PI2 = Math.PI * 2;
+
+    const OUTER  = "ΩΧΞΦΨΛΣΔΘΓΠΒΩΧΞΦΨΛΣΔΘΓΠΒΩΧΞΦΨΛΣΔΘΓΠΒΩΧΞΦΨΛΣ".split("");
+    const MIDDLE = "ʕΩXΩʕΨΦʃΛΣΔΘΓΠΒΩΧΞΦΨΛΣΔΘΓΠΒΩΧΞΦΨΛΣ".split("");
+    const INNER  = "ΩΧΞΦΨΛΣΔΘΓΠΒΩΧΞΦΨΛΣΔ".split("");
+
+    // Color palette — warm gold + touches of amber and pale yellow-white
+    const C = {
+      bright:  (a) => `rgba(255,254,227,${a})`,       // #FFFEE3 near-white gold
+      gold:    (a) => `rgba(255,220,80,${a})`,         // warm gold
+      amber:   (a) => `rgba(255,185,40,${a})`,         // deep amber accent
+      glow:    (a) => `rgba(255,240,150,${a})`,        // soft glow yellow
+    };
+
+    // Shimmer glow helper — draws a blurred halo around a shape
+    const glowLine = (drawFn, color, blur, alpha) => {
+      ctx.save();
+      ctx.shadowColor = color;
+      ctx.shadowBlur  = blur;
+      ctx.globalAlpha = alpha;
+      drawFn();
+      ctx.shadowBlur  = 0;
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    };
+
+    const arcText = (chars, r, rotOffset, size, alpha) => {
+      const step = PI2 / chars.length;
+      ctx.font = `${size}px serif`;
+      ctx.fillStyle = C.bright(alpha);
+      ctx.shadowColor = C.gold(0.8);
+      ctx.shadowBlur  = 6;
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      chars.forEach((ch, i) => {
+        const a = rotOffset + step * i;
+        ctx.save();
+        ctx.rotate(a); ctx.translate(0,-r); ctx.rotate(-a+Math.PI*0.5);
+        ctx.fillText(ch, 0, 0);
+        ctx.restore();
+      });
+      ctx.shadowBlur = 0;
+    };
+
+    const drawSpear = (ctx, len, baseW, alpha) => {
+      ctx.shadowColor = C.gold(0.9);
+      ctx.shadowBlur  = 14;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(baseW, len*0.15);
+      ctx.lineTo(baseW*0.5, len*0.38);
+      ctx.lineTo(0, len);
+      ctx.lineTo(-baseW*0.5, len*0.38);
+      ctx.lineTo(-baseW, len*0.15);
+      ctx.closePath();
+      ctx.strokeStyle=C.bright(alpha); ctx.lineWidth=1.1; ctx.stroke();
+      // Fill with faint amber
+      ctx.fillStyle=C.amber(alpha*0.12); ctx.fill();
+      ctx.shadowBlur=0;
+      ctx.beginPath(); ctx.moveTo(0,len*0.05); ctx.lineTo(0,len*0.90);
+      ctx.strokeStyle=C.glow(alpha*0.55); ctx.lineWidth=0.6; ctx.stroke();
+    };
+
+    const drawStar = (ctx, r1, r2, alpha, fill=true) => {
+      ctx.shadowColor = C.gold(1.0);
+      ctx.shadowBlur  = 18;
+      ctx.beginPath();
+      for(let i=0;i<8;i++){
+        const a=(PI2/8)*i-Math.PI/4, r=i%2===0?r1:r2;
+        i===0?ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r):ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);
+      }
+      ctx.closePath();
+      if(fill){ctx.fillStyle=C.glow(alpha*0.9);ctx.fill();}
+      ctx.strokeStyle=C.bright(alpha); ctx.lineWidth=1.0; ctx.stroke();
+      ctx.shadowBlur=0;
+    };
+
+    const drawStar8 = (ctx, r1, r2, alpha) => {
+      drawStar(ctx,r1,r2,alpha,true);
+      ctx.save(); ctx.rotate(Math.PI/4);
+      drawStar(ctx,r1*0.75,r2,alpha*0.55,false);
+      ctx.restore();
+    };
+
+    const drawGear = (ctx, r, alpha) => {
+      ctx.shadowColor = C.amber(0.8);
+      ctx.shadowBlur  = 10;
+      ctx.beginPath(); ctx.arc(0,0,r,0,PI2);
+      ctx.strokeStyle=C.bright(alpha); ctx.lineWidth=1.1; ctx.stroke();
+      ctx.beginPath(); ctx.arc(0,0,r*0.52,0,PI2);
+      ctx.strokeStyle=C.gold(alpha*0.65); ctx.lineWidth=0.8; ctx.stroke();
+      for(let i=0;i<4;i++){
+        const a=(PI2/4)*i;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a)*r*0.52,Math.sin(a)*r*0.52);
+        ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);
+        ctx.strokeStyle=C.bright(alpha*0.9); ctx.lineWidth=2.2; ctx.stroke();
+      }
+      ctx.beginPath(); ctx.arc(0,0,r*0.20,0,PI2);
+      ctx.fillStyle=C.glow(alpha*0.7); ctx.fill();
+      ctx.shadowBlur=0;
+    };
+
+    const drawBracket = (ctx, w, h, alpha) => {
+      ctx.beginPath();
+      ctx.moveTo(-w,0); ctx.lineTo(-w,-h); ctx.lineTo(w,-h); ctx.lineTo(w,0);
+      ctx.strokeStyle=C.bright(alpha); ctx.lineWidth=0.8; ctx.stroke();
+    };
+
+    // Draw a glowing circle arc
+    const glowArc = (r, color, blur, lw, alpha) => {
+      ctx.shadowColor = color; ctx.shadowBlur = blur;
+      ctx.beginPath(); ctx.arc(0,0,r,0,PI2);
+      ctx.strokeStyle = C.bright(alpha); ctx.lineWidth = lw; ctx.stroke();
+      ctx.shadowBlur = 0;
+    };
+
+    let rot=0;
+    const draw = () => {
+      const W=canvas.width, H=canvas.height;
+      ctx.clearRect(0,0,W,H);
+      ctx.lineCap="round"; ctx.lineJoin="round";
+
+      const cx=W*0.50, cy=H*0.50;
+      const R=Math.min(W,H)*0.40;
+
+      // ── OUTERMOST RING ────────────────────────────────────────────────────
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate(rot*0.05);
+
+      // Tighter letter band — Ri moved closer to Ro
+      const Ro=R, Ri=R*0.88;
+      const Rmid=(Ro+Ri)*0.505;
+
+      glowArc(Ro,   C.gold(1), 22, 1.6, 0.50);
+      glowArc(Ri,   C.gold(1), 10, 1.0, 0.28);
+      glowArc(Ro+8, C.amber(1), 4, 0.5, 0.12);
+
+      for(let i=0;i<96;i++){
+        const a=(PI2/96)*i;
+        const len=i%12===0?11:i%4===0?6:2.5;
+        const alp=i%12===0?0.65:i%4===0?0.32:0.13;
+        ctx.shadowColor=i%12===0?C.gold(1):"transparent";
+        ctx.shadowBlur=i%12===0?8:0;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a)*Ro,Math.sin(a)*Ro);
+        ctx.lineTo(Math.cos(a)*(Ro-len),Math.sin(a)*(Ro-len));
+        ctx.strokeStyle=C.bright(alp); ctx.lineWidth=0.7; ctx.stroke();
+      }
+      ctx.shadowBlur=0;
+
+      arcText(OUTER, Rmid, -Math.PI/2, 10, 0.80);
+
+      // Spears
+      const spikeA=Array.from({length:8},(_,i)=>(PI2/8)*i-Math.PI/2);
+      spikeA.forEach((a,i)=>{
+        const isCard=i%2===0;
+        ctx.save(); ctx.rotate(a); ctx.translate(0,-Ro-4);
+        drawSpear(ctx, isCard?R*0.50:R*0.30, isCard?10:7, isCard?0.68:0.48);
+        ctx.restore();
+      });
+      spikeA.filter((_,i)=>i%2===0).forEach(a=>{
+        ctx.save(); ctx.rotate(a); ctx.translate(0,-(Ro+4+R*0.50*0.94));
+        drawStar8(ctx,26,8,0.80);
+        ctx.restore();
+      });
+      spikeA.filter((_,i)=>i%2!==0).forEach(a=>{
+        ctx.save(); ctx.rotate(a); ctx.translate(0,-(Ro+4+R*0.30*0.94));
+        drawStar(ctx,18,6,0.62);
+        ctx.restore();
+      });
+      for(let i=0;i<8;i++){
+        const a=(PI2/8)*i-Math.PI/2+Math.PI/16;
+        ctx.save();
+        ctx.translate(Math.cos(a)*(Ro+R*0.13),Math.sin(a)*(Ro+R*0.13));
+        drawGear(ctx,R*0.072,0.45);
+        ctx.restore();
+      }
+      ctx.restore();
+
+      // ── OUTER-MIDDLE RING — CCW ───────────────────────────────────────────
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate(-rot*0.10);
+      const R1b=R*0.74;
+      ctx.shadowColor=C.amber(0.5); ctx.shadowBlur=8;
+      ctx.beginPath(); ctx.arc(0,0,R1b,0,PI2);
+      ctx.strokeStyle=C.bright(0.22); ctx.lineWidth=0.9; ctx.stroke();
+      ctx.beginPath(); ctx.arc(0,0,R1b*0.91,0,PI2);
+      ctx.strokeStyle=C.bright(0.13); ctx.lineWidth=0.6; ctx.stroke();
+      ctx.shadowBlur=0;
+      for(let i=0;i<24;i++){
+        const a1=(PI2/24)*i, a2=a1+(PI2/24)*0.48;
+        ctx.beginPath(); ctx.arc(0,0,R1b*0.955,a1,a2);
+        ctx.strokeStyle=C.gold(0.35); ctx.lineWidth=2.2; ctx.stroke();
+      }
+      for(let i=0;i<6;i++){
+        const a=(PI2/6)*i;
+        ctx.save(); ctx.rotate(a); ctx.translate(0,-R1b*0.95);
+        drawBracket(ctx,6,5,0.38);
+        ctx.restore();
+      }
+      ctx.restore();
+
+      // ── MIDDLE LETTER RING — CW, tighter band ────────────────────────────
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate(rot*0.15);
+      const R2o=R*0.62, R2i=R*0.54; // tighter gap
+      ctx.shadowColor=C.gold(0.7); ctx.shadowBlur=12;
+      ctx.beginPath(); ctx.arc(0,0,R2o,0,PI2);
+      ctx.strokeStyle=C.bright(0.35); ctx.lineWidth=1.2; ctx.stroke();
+      ctx.beginPath(); ctx.arc(0,0,R2i,0,PI2);
+      ctx.strokeStyle=C.bright(0.20); ctx.lineWidth=0.8; ctx.stroke();
+      ctx.shadowBlur=0;
+      arcText(MIDDLE,(R2o+R2i)*0.505,-Math.PI/2,9,0.68);
+      for(let i=0;i<4;i++){
+        const a=(PI2/4)*i;
+        ctx.save(); ctx.rotate(a); ctx.translate(0,-R2o-2);
+        drawSpear(ctx,R*0.13,4.5,0.42);
+        ctx.restore();
+      }
+      ctx.restore();
+
+      // ── INNER LETTER RING — CCW, tighter band ────────────────────────────
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate(-rot*0.22);
+      const R3o=R*0.44, R3i=R*0.37; // tighter gap
+      ctx.shadowColor=C.gold(0.6); ctx.shadowBlur=10;
+      ctx.beginPath(); ctx.arc(0,0,R3o,0,PI2);
+      ctx.strokeStyle=C.bright(0.30); ctx.lineWidth=1.0; ctx.stroke();
+      ctx.beginPath(); ctx.arc(0,0,R3i,0,PI2);
+      ctx.strokeStyle=C.bright(0.18); ctx.lineWidth=0.7; ctx.stroke();
+      ctx.shadowBlur=0;
+      arcText(INNER,(R3o+R3i)*0.505,-Math.PI/2,8,0.62);
+      ctx.restore();
+
+      // ── INNERMOST RING — CW ───────────────────────────────────────────────
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate(rot*0.32);
+      const R4=R*0.26;
+      ctx.shadowColor=C.amber(0.6); ctx.shadowBlur=8;
+      ctx.beginPath(); ctx.arc(0,0,R4,0,PI2);
+      ctx.strokeStyle=C.bright(0.30); ctx.lineWidth=0.9; ctx.stroke();
+      ctx.shadowBlur=0;
+      for(let i=0;i<20;i++){
+        const a1=(PI2/20)*i, a2=a1+(PI2/20)*0.45;
+        ctx.beginPath(); ctx.arc(0,0,R4,a1,a2);
+        ctx.strokeStyle=C.gold(0.45); ctx.lineWidth=2.0; ctx.stroke();
+      }
+      for(let i=0;i<4;i++){
+        const a=(PI2/4)*i;
+        ctx.save(); ctx.rotate(a+Math.PI); ctx.translate(0,-R4+2);
+        drawSpear(ctx,R*0.07,3,0.35);
+        ctx.restore();
+      }
+      ctx.restore();
+
+      // ── CENTRAL STAR ──────────────────────────────────────────────────────
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate(rot*0.50);
+      drawStar8(ctx,R*0.15,R*0.05,0.85);
+      ctx.restore();
+
+      rot+=0.006;
+      raf=requestAnimationFrame(draw);
+    };
+    draw();
+    return ()=>{ cancelAnimationFrame(raf); window.removeEventListener("resize",resize); };
+  },[]);
+  return (
+    <canvas ref={canvasRef} style={{
+      position:"absolute",inset:0,width:"100%",height:"100%",
+      zIndex:0,pointerEvents:"none",opacity:0.72,
+    }}/>
+  );
+}
+
 // Swap this for your R2 public bucket URL when ready
 const IMG_BASE = "https://pub-2f8b565f5d5e4601814c638f74967ba9.r2.dev";
 
@@ -642,6 +934,7 @@ export default function App() {
           padding: 40px 48px 80px 52px;
           overflow-y: auto;
           box-sizing: border-box;
+          position: relative;
           opacity: 0; transform: translateY(8px);
           transition: opacity .45s .1s ease, transform .45s .1s ease;
         }
@@ -1223,6 +1516,7 @@ export default function App() {
 
           {/* ── Right: Cards + detail ── */}
           <main className={`content ${mounted ? "in" : ""}`}>
+            <Circuitry/>
 
             {/* Filter bar */}
             <div className="bar">
