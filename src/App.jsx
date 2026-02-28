@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 
-// ── Animated background — Crown: static bars + dust ─────────────────────────
+// ── Animated background — Crown: slit light + simple dust ───────────────────
 function Background() {
   const canvasRef = useRef(null);
   useEffect(() => {
@@ -12,24 +12,15 @@ function Background() {
     window.addEventListener("resize", resize);
     const PI2 = Math.PI * 2;
 
-    // Top rays — drawn once as a static gradient layer, not animated columns
-    // These are subtle slats, not dominant shapes
-    const rayXPositions = [.09,.18,.27,.36,.44,.50,.56,.64,.73,.82,.90];
-
-    // Dust — tiny, slow, brownish-white like real floating debris
-    const dust = Array.from({length: 85}, () => ({
+    // Simple dust — tiny bright pinpoints, no complex math
+    const dust = Array.from({length: 80}, () => ({
       x:  Math.random(),
       y:  Math.random(),
-      // elongated slightly — real dust motes are not perfect circles
-      rx: .4 + Math.random() * .9,   // x radius
-      ry: .6 + Math.random() * 1.4,  // y radius (taller than wide)
-      vx: (Math.random() - .5) * .00006,
-      vy: -(0.00012 + Math.random() * .00022),
+      r:  0.3 + Math.random() * 0.7,
+      vx: (Math.random() - 0.5) * 0.00008,
+      vy: -(0.00015 + Math.random() * 0.00025),
       ph: Math.random() * PI2,
-      // mostly invisible, only shimmer in light zones
-      base: .015 + Math.random() * .025,
-      lit:  .08 + Math.random() * .18,
-      rot:  Math.random() * PI2,      // random tilt angle
+      al: 0.05 + Math.random() * 0.25,
     }));
 
     let t = 0;
@@ -37,133 +28,114 @@ function Background() {
       const W = canvas.width, H = canvas.height;
       ctx.clearRect(0, 0, W, H);
 
-      // ── Base: warm olive-brown near-black ──────────────────────────────────
+      // ── Base: warm olive-black ──────────────────────────────────────────────
       ctx.fillStyle = "#0F0C06";
       ctx.fillRect(0, 0, W, H);
 
-      // Subtle warm centre — matches Crown's texture
-      const midWarm = ctx.createRadialGradient(W*.5,H*.45,0, W*.5,H*.45,W*.65);
-      midWarm.addColorStop(0,  "rgba(72,52,14,0.20)");
-      midWarm.addColorStop(.55,"rgba(45,32, 8,0.07)");
-      midWarm.addColorStop(1,  "rgba(0,0,0,0)");
-      ctx.fillStyle = midWarm; ctx.fillRect(0,0,W,H);
+      // Subtle warm radial centre tint
+      const midWarm = ctx.createRadialGradient(W*0.5, H*0.45, 0, W*0.5, H*0.45, W*0.65);
+      midWarm.addColorStop(0,   "rgba(55,48,32,0.14)");
+      midWarm.addColorStop(0.55,"rgba(38,34,22,0.05)");
+      midWarm.addColorStop(1,   "rgba(0,0,0,0)");
+      ctx.fillStyle = midWarm;
+      ctx.fillRect(0, 0, W, H);
 
-      // ════════════════════════════════════════════════════════
-      // TOP LIGHT BAR — one horizontal glowing band at ceiling
-      // ════════════════════════════════════════════════════════
-
-      // Bright seam right at top edge
-      const topSeam = ctx.createLinearGradient(0,0,0,6);
-      topSeam.addColorStop(0, "rgba(255,248,210,0.70)");
+      // ════════════════════════════════════════════════════════════════════════
+      // TOP — simple bright seam at ceiling edge + soft wash downward
+      // No rays, no columns — just the light source itself
+      // ════════════════════════════════════════════════════════════════════════
+      const topSeam = ctx.createLinearGradient(0, 0, 0, 3);
+      topSeam.addColorStop(0, "rgba(242,235,215,0.55)");
       topSeam.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = topSeam; ctx.fillRect(0,0,W,6);
+      ctx.fillStyle = topSeam;
+      ctx.fillRect(0, 0, W, 3);
 
-      // Wide bloom downward from top — USE 'source-over', NOT screen
-      // screen was causing the dark column artifacts
-      const topBloom = ctx.createLinearGradient(0,0,0,H*.50);
-      topBloom.addColorStop(0,   "rgba(185,148,48,0.18)");
-      topBloom.addColorStop(.08, "rgba(165,130,36,0.10)");
-      topBloom.addColorStop(.22, "rgba(142,112,24,0.04)");
-      topBloom.addColorStop(.50, "rgba(115, 90,16,0.01)");
-      topBloom.addColorStop(1,   "rgba(0,0,0,0)");
-      ctx.fillStyle = topBloom; ctx.fillRect(0,0,W,H*.50);
+      const topWash = ctx.createLinearGradient(0, 0, 0, H * 0.40);
+      topWash.addColorStop(0,    "rgba(185,178,155,0.11)");
+      topWash.addColorStop(0.10, "rgba(168,160,138,0.05)");
+      topWash.addColorStop(0.28, "rgba(140,134,115,0.018)");
+      topWash.addColorStop(1,    "rgba(0,0,0,0)");
+      ctx.fillStyle = topWash;
+      ctx.fillRect(0, 0, W, H * 0.40);
 
-      // Subtle rays — just single-pixel-wide bright lines, no filled trapezoids
-      // They should read as slits of light, not shapes
-      ctx.save();
-      ctx.globalAlpha = 1;
-      for (let i = 0; i < rayXPositions.length; i++) {
-        const cx    = rayXPositions[i] * W;
-        const reach = H * (.25 + (i===5 ? .35 : i%3===0 ? .18 : .10));
-        // Core ray — 1.5px wide filled rect with vertical gradient (strokeStyle rejects gradients)
-        const lg = ctx.createLinearGradient(cx, 0, cx, reach);
-        lg.addColorStop(0,   "rgba(255,245,185,0.28)");
-        lg.addColorStop(.12, "rgba(230,195, 80,0.10)");
-        lg.addColorStop(.40, "rgba(200,162, 45,0.03)");
-        lg.addColorStop(1,   "rgba(0,0,0,0)");
-        ctx.fillStyle = lg;
-        ctx.fillRect(cx - 0.75, 0, 1.5, reach);
-        // Soft halo — narrow trapezoid, very faint
-        const hazeW = W * .008;
-        const haze  = ctx.createLinearGradient(cx, 0, cx, reach * .6);
-        haze.addColorStop(0,  "rgba(210,172,58,0.06)");
-        haze.addColorStop(1,  "rgba(0,0,0,0)");
-        ctx.beginPath();
-        ctx.moveTo(cx-hazeW,0); ctx.lineTo(cx+hazeW,0);
-        ctx.lineTo(cx+hazeW*.1,reach*.6); ctx.lineTo(cx-hazeW*.1,reach*.6);
-        ctx.closePath(); ctx.fillStyle = haze; ctx.fill();
-      }
-      ctx.restore();
+      // ════════════════════════════════════════════════════════════════════════
+      // BOTTOM — horizontal slit with light bursting through it
+      // Brightest at horizontal centre, fades left/right
+      // The "cut" sits just above the very bottom edge
+      // ════════════════════════════════════════════════════════════════════════
+      const slitY = H * 0.915;  // where the slit sits
+      const slitH = 3;          // thickness of the slit itself
 
-      // ════════════════════════════════════════════════════════
-      // BOTTOM LIGHT BAR — dominant warm gold pool
-      // ════════════════════════════════════════════════════════
+      // Horizontal radial: bright white-gold at center, dims toward edges
+      // Simulated with a left-right linear gradient on the slit rect
+      const slitH_grad = ctx.createLinearGradient(0, 0, W, 0);
+      slitH_grad.addColorStop(0,    "rgba(185,175,148,0.12)");
+      slitH_grad.addColorStop(0.25, "rgba(210,200,175,0.45)");
+      slitH_grad.addColorStop(0.45, "rgba(238,228,205,0.80)");
+      slitH_grad.addColorStop(0.50, "rgba(245,238,218,0.92)"); // peak centre
+      slitH_grad.addColorStop(0.55, "rgba(238,228,205,0.80)");
+      slitH_grad.addColorStop(0.75, "rgba(210,200,175,0.45)");
+      slitH_grad.addColorStop(1,    "rgba(185,175,148,0.12)");
+      ctx.fillStyle = slitH_grad;
+      ctx.fillRect(0, slitY, W, slitH);
 
-      // Seam line at floor
-      const btmSeam = ctx.createLinearGradient(0,H-6,0,H);
-      btmSeam.addColorStop(0,  "rgba(0,0,0,0)");
-      btmSeam.addColorStop(.5, "rgba(225,185,70,0.55)");
-      btmSeam.addColorStop(1,  "rgba(255,235,120,0.80)");
-      ctx.fillStyle = btmSeam; ctx.fillRect(0,H-6,W,6);
+      // Burst bloom upward from the slit — center-weighted
+      // Layer 1: wide gentle fill
+      const burstWide = ctx.createLinearGradient(0, slitY, 0, H * 0.25);
+      burstWide.addColorStop(0,   "rgba(195,185,160,0.20)");
+      burstWide.addColorStop(0.15,"rgba(175,168,145,0.10)");
+      burstWide.addColorStop(0.40,"rgba(152,146,125,0.035)");
+      burstWide.addColorStop(0.70,"rgba(122,116, 98,0.008)");
+      burstWide.addColorStop(1,   "rgba(0,0,0,0)");
+      ctx.fillStyle = burstWide;
+      ctx.fillRect(0, H * 0.25, W, slitY - H * 0.25);
 
-      // Primary dense pool — lower 30%
-      const btmDense = ctx.createLinearGradient(0,H,0,H*.70);
-      btmDense.addColorStop(0,   "rgba(205,162,46,0.52)");
-      btmDense.addColorStop(.20, "rgba(185,145,34,0.32)");
-      btmDense.addColorStop(.55, "rgba(160,125,24,0.12)");
-      btmDense.addColorStop(1,   "rgba(0,0,0,0)");
-      ctx.fillStyle = btmDense; ctx.fillRect(0,H*.70,W,H*.30);
+      // Layer 2: center-column burst — extra bright cone rising from slit center
+      const bx = W * 0.5;
+      const burstCone = ctx.createRadialGradient(bx, slitY, 0, bx, slitY, W * 0.55);
+      burstCone.addColorStop(0,    "rgba(205,195,168,0.22)");
+      burstCone.addColorStop(0.20, "rgba(185,178,155,0.10)");
+      burstCone.addColorStop(0.50, "rgba(158,152,130,0.028)");
+      burstCone.addColorStop(1,    "rgba(0,0,0,0)");
+      ctx.fillStyle = burstCone;
+      ctx.fillRect(0, 0, W, H);
 
-      // Secondary reach — fades up to mid-screen
-      const btmReach = ctx.createLinearGradient(0,H,0,H*.28);
-      btmReach.addColorStop(0,   "rgba(165,130,38,0.18)");
-      btmReach.addColorStop(.28, "rgba(142,112,26,0.06)");
-      btmReach.addColorStop(.60, "rgba(118, 92,18,0.015)");
-      btmReach.addColorStop(1,   "rgba(0,0,0,0)");
-      ctx.fillStyle = btmReach; ctx.fillRect(0,H*.28,W,H*.72);
+      // Dense pool right below the slit — floor glow
+      const floorPool = ctx.createLinearGradient(0, slitY, 0, H);
+      floorPool.addColorStop(0,   "rgba(205,195,168,0.38)");
+      floorPool.addColorStop(0.4, "rgba(185,178,155,0.20)");
+      floorPool.addColorStop(1,   "rgba(162,155,132,0.12)");
+      ctx.fillStyle = floorPool;
+      ctx.fillRect(0, slitY, W, H - slitY);
 
-      // ════════════════════════════════════════════════════════
-      // DUST — soft, slow, brownish-cream motes
-      // Look like real airborne debris, not stars
-      // ════════════════════════════════════════════════════════
-      ctx.save();
+      // ════════════════════════════════════════════════════════════════════════
+      // DUST — simple tiny pinpoints, brightest near bottom light
+      // ════════════════════════════════════════════════════════════════════════
       for (const d of dust) {
         d.x += d.vx; d.y += d.vy;
-        if (d.y < -.01) { d.y = 1.01; d.x = Math.random(); }
-        if (d.x < 0) d.x = 1; if (d.x > 1) d.x = 0;
+        if (d.y < -0.01) { d.y = 1.01; d.x = Math.random(); }
+        if (d.x < 0) d.x = 1;
+        if (d.x > 1) d.x = 0;
 
-        // Illumination: how much top/bottom bloom reaches this particle
-        const tl  = d.y < .45 ? (1 - d.y / .45) * .6 : 0;
-        const bl  = d.y > .45 ? (1 - (1 - d.y) / .55) : 0;
-        const env = tl > bl ? tl : bl;
-        const shimmer = .30 + .70 * Math.sin(t * .0018 + d.ph);
-        const al = (d.base + env * d.lit) * shimmer;
-        if (!isFinite(al) || al < .008) continue;
+        // Brighter near the bottom slit and top seam
+        const nearBottom = Math.max(0, 1 - Math.abs(d.y - 0.91) / 0.35);
+        const nearTop    = Math.max(0, 1 - d.y / 0.30);
+        const envBoost   = Math.max(nearBottom, nearTop * 0.5);
+        const shimmer    = 0.4 + 0.6 * Math.sin(t * 0.0020 + d.ph);
+        const al         = (d.al + envBoost * 0.35) * shimmer;
 
-        const a0 = Math.min(al, .72);
-        const a1 = Math.min(al * .38, .28);
-
-        ctx.save();
-        ctx.translate(d.x * W, d.y * H);
-        const maxR = Math.max(d.rx, d.ry) * 2.5;
-        const grd  = ctx.createRadialGradient(0, 0, 0, 0, 0, maxR);
-        grd.addColorStop(0,   `rgba(222,202,152,${a0})`);
-        grd.addColorStop(0.5, `rgba(208,185,128,${a1})`);
-        grd.addColorStop(1,    "rgba(0,0,0,0)");
-        ctx.scale(d.rx, d.ry);
+        if (al < 0.012) continue;
         ctx.beginPath();
-        ctx.arc(0, 0, 2.5, 0, PI2);
-        ctx.fillStyle = grd;
+        ctx.arc(d.x * W, d.y * H, d.r, 0, PI2);
+        ctx.fillStyle = `rgba(225,220,205,${Math.min(al, 0.85)})`;
         ctx.fill();
-        ctx.restore();
       }
-      ctx.restore();
 
       t++;
       raf = requestAnimationFrame(draw);
     };
     draw();
-    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize",resize); };
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
   }, []);
   return <canvas ref={canvasRef} style={{position:"fixed",inset:0,width:"100%",height:"100%",zIndex:0,pointerEvents:"none"}}/>;
 }
@@ -421,7 +393,7 @@ export default function App() {
           --mono: 'DM Mono', monospace;
         }
 
-        html, body { background: #0a0804; }
+        html, body { background: #0a0804; margin:0; padding:0; overflow:hidden; height:100%; }
         body {
           font-family: 'DM Sans', sans-serif;
           -webkit-font-smoothing: antialiased;
@@ -441,7 +413,8 @@ export default function App() {
         .layout {
           display: flex;
           width: 100vw;
-          min-height: 100vh;
+          height: 100vh;
+          overflow: hidden;
         }
 
         /* ── Left panel — dashboard, fixed width ── */
