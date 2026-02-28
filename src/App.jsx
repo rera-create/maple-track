@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 
-// ── Animated background — Crown: slit light + simple dust ───────────────────
+// ── Animated background — base + floating dust only ─────────────────────────
 function Background() {
   const canvasRef = useRef(null);
   useEffect(() => {
@@ -12,7 +12,6 @@ function Background() {
     window.addEventListener("resize", resize);
     const PI2 = Math.PI * 2;
 
-    // Simple dust — tiny bright pinpoints, no complex math
     const dust = Array.from({length: 80}, () => ({
       x:  Math.random(),
       y:  Math.random(),
@@ -20,7 +19,7 @@ function Background() {
       vx: (Math.random() - 0.5) * 0.00008,
       vy: -(0.00015 + Math.random() * 0.00025),
       ph: Math.random() * PI2,
-      al: 0.05 + Math.random() * 0.25,
+      al: 0.04 + Math.random() * 0.18,
     }));
 
     let t = 0;
@@ -28,131 +27,25 @@ function Background() {
       const W = canvas.width, H = canvas.height;
       ctx.clearRect(0, 0, W, H);
 
-      // ── Base: warm olive-black ──────────────────────────────────────────────
+      // Warm near-black base
       ctx.fillStyle = "#0F0C06";
       ctx.fillRect(0, 0, W, H);
+      const warm = ctx.createRadialGradient(W*0.5, H*0.5, 0, W*0.5, H*0.5, W*0.7);
+      warm.addColorStop(0,  "rgba(55,42,12,0.20)");
+      warm.addColorStop(0.6,"rgba(32,24, 6,0.08)");
+      warm.addColorStop(1,  "rgba(0,0,0,0)");
+      ctx.fillStyle = warm; ctx.fillRect(0, 0, W, H);
 
-      // Subtle warm radial centre tint
-      const midWarm = ctx.createRadialGradient(W*0.5, H*0.45, 0, W*0.5, H*0.45, W*0.65);
-      midWarm.addColorStop(0,   "rgba(55,48,32,0.14)");
-      midWarm.addColorStop(0.55,"rgba(38,34,22,0.05)");
-      midWarm.addColorStop(1,   "rgba(0,0,0,0)");
-      ctx.fillStyle = midWarm;
-      ctx.fillRect(0, 0, W, H);
-
-      // ════════════════════════════════════════════════════════════════════════
-      // TOP — simple bright seam at ceiling edge + soft wash downward
-      // No rays, no columns — just the light source itself
-      // ════════════════════════════════════════════════════════════════════════
-      const topSeam = ctx.createLinearGradient(0, 0, 0, 3);
-      topSeam.addColorStop(0, "rgba(242,235,215,0.55)");
-      topSeam.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = topSeam;
-      ctx.fillRect(0, 0, W, 3);
-
-      const topWash = ctx.createLinearGradient(0, 0, 0, H * 0.40);
-      topWash.addColorStop(0,    "rgba(185,178,155,0.11)");
-      topWash.addColorStop(0.10, "rgba(168,160,138,0.05)");
-      topWash.addColorStop(0.28, "rgba(140,134,115,0.018)");
-      topWash.addColorStop(1,    "rgba(0,0,0,0)");
-      ctx.fillStyle = topWash;
-      ctx.fillRect(0, 0, W, H * 0.40);
-
-      // ════════════════════════════════════════════════════════════════════════
-      // BOTTOM — event horizon burst. Fixed at bottom of viewport.
-      // Near-white #FFFEE3 core, gold bloom radiating upward and outward.
-      // Multiple layers: deep field fill → radial corona → 
-      //   vertical beam → hot line → above-line glow → floor fill
-      // ════════════════════════════════════════════════════════════════════════
-      const ehY = H - 42;   // event horizon Y position
-
-      // 1. Deep field — fills the whole lower 65% with faint warm light
-      //    This is the "gravity well" — light bending toward the horizon
-      const field = ctx.createLinearGradient(0, H, 0, H * 0.35);
-      field.addColorStop(0,    "rgba(255,254,227,0.18)");
-      field.addColorStop(0.12, "rgba(240,220,140,0.12)");
-      field.addColorStop(0.35, "rgba(220,195,100,0.05)");
-      field.addColorStop(0.65, "rgba(195,168,72,0.012)");
-      field.addColorStop(1,    "rgba(0,0,0,0)");
-      ctx.fillStyle = field;
-      ctx.fillRect(0, H * 0.35, W, H * 0.65);
-
-      // 2. Corona — radial burst centered on horizon, strong upward reach
-      //    Brighter at centre horizontally — like a star behind the horizon
-      const cx2 = W * 0.5;
-      const corona = ctx.createRadialGradient(cx2, ehY, 0, cx2, ehY, W * 0.70);
-      corona.addColorStop(0,    "rgba(255,254,227,0.45)");
-      corona.addColorStop(0.08, "rgba(252,240,175,0.28)");
-      corona.addColorStop(0.22, "rgba(240,215,120,0.12)");
-      corona.addColorStop(0.45, "rgba(218,188,82,0.04)");
-      corona.addColorStop(1,    "rgba(0,0,0,0)");
-      ctx.fillStyle = corona;
-      ctx.fillRect(0, 0, W, H);
-
-      // 3. Vertical beam — bright upward column from centre of horizon
-      //    The light that "escapes" straight up through the crack
-      const beamW = W * 0.35;
-      const beam = ctx.createLinearGradient(0, ehY, 0, H * 0.20);
-      beam.addColorStop(0,    "rgba(255,254,227,0.22)");
-      beam.addColorStop(0.20, "rgba(252,244,200,0.10)");
-      beam.addColorStop(0.55, "rgba(240,220,145,0.03)");
-      beam.addColorStop(1,    "rgba(0,0,0,0)");
-      const beamLR = ctx.createLinearGradient(cx2 - beamW, 0, cx2 + beamW, 0);
-      beamLR.addColorStop(0,    "rgba(0,0,0,0)");
-      beamLR.addColorStop(0.25, "rgba(255,254,227,0.55)");
-      beamLR.addColorStop(0.50, "rgba(255,254,227,1.00)");
-      beamLR.addColorStop(0.75, "rgba(255,254,227,0.55)");
-      beamLR.addColorStop(1,    "rgba(0,0,0,0)");
-      // Draw beam: vertical fade rect, then mask horizontally via globalAlpha trick
-      // Use two overlapping fills: one vertical, one horizontal
-      ctx.save();
-      ctx.globalAlpha = 0.18;
-      ctx.fillStyle = beam;
-      ctx.fillRect(cx2 - beamW, H * 0.20, beamW * 2, ehY - H * 0.20);
-      ctx.restore();
-
-      // 4. Immediate above-horizon glow — compressed bright band just above line
-      const aboveGlow = ctx.createLinearGradient(0, ehY - 55, 0, ehY);
-      aboveGlow.addColorStop(0,    "rgba(0,0,0,0)");
-      aboveGlow.addColorStop(0.45, "rgba(252,244,195,0.08)");
-      aboveGlow.addColorStop(0.78, "rgba(255,252,215,0.28)");
-      aboveGlow.addColorStop(1,    "rgba(255,254,227,0.55)");
-      ctx.fillStyle = aboveGlow;
-      ctx.fillRect(0, ehY - 55, W, 55);
-
-      // 5. The horizon line itself — #FFFEE3 near-white core, gold toward edges
-      //    6px tall, peaks at centre with horizontal gradient
-      const hLine = ctx.createLinearGradient(0, 0, W, 0);
-      hLine.addColorStop(0,    "rgba(195,158,55,0.05)");
-      hLine.addColorStop(0.15, "rgba(235,205,110,0.60)");
-      hLine.addColorStop(0.38, "rgba(252,246,210,0.92)");
-      hLine.addColorStop(0.50, "rgba(255,254,227,1.00)");  // #FFFEE3 peak
-      hLine.addColorStop(0.62, "rgba(252,246,210,0.92)");
-      hLine.addColorStop(0.85, "rgba(235,205,110,0.60)");
-      hLine.addColorStop(1,    "rgba(195,158,55,0.05)");
-      ctx.fillStyle = hLine;
-      ctx.fillRect(0, ehY - 1, W, 6);
-
-      // 6. Floor fill — dense gold below the line, darkens toward bottom edge
-      const floor = ctx.createLinearGradient(0, ehY, 0, H);
-      floor.addColorStop(0,    "rgba(255,254,227,0.65)");
-      floor.addColorStop(0.15, "rgba(245,225,140,0.42)");
-      floor.addColorStop(0.45, "rgba(225,195,90,0.22)");
-      floor.addColorStop(1,    "rgba(195,162,55,0.10)");
-      ctx.fillStyle = floor;
-      ctx.fillRect(0, ehY, W, H - ehY);
-
-      // ── Dust — simple drifting pinpoints ─────────────────────────────────────
+      // Dust
       for (const d of dust) {
         d.x += d.vx; d.y += d.vy;
         if (d.y < -0.01) { d.y = 1.01; d.x = Math.random(); }
-        if (d.x < 0) d.x = 1;
-        if (d.x > 1) d.x = 0;
+        if (d.x < 0) d.x = 1; if (d.x > 1) d.x = 0;
         const al = d.al * (0.4 + 0.6 * Math.sin(t * 0.0020 + d.ph));
-        if (al < 0.012) continue;
+        if (al < 0.01) continue;
         ctx.beginPath();
         ctx.arc(d.x * W, d.y * H, d.r, 0, PI2);
-        ctx.fillStyle = `rgba(255,254,227,${Math.min(al, 0.70)})`;
+        ctx.fillStyle = `rgba(255,254,227,${Math.min(al, 0.65)})`;
         ctx.fill();
       }
 
@@ -468,10 +361,44 @@ export default function App() {
           z-index: 2;
           display: flex;
           flex-direction: column;
+          overflow: hidden;
           opacity: 0; transform: translateX(-12px);
           transition: opacity .5s ease, transform .5s ease;
         }
         .sidebar.in { opacity:1; transform:translateX(0); }
+
+        /* TOP bar — sits just above eyebrow text, flush with sidebar */
+        .sidebar::before {
+          content: '';
+          position: absolute;
+          top: 22px; left: 0; right: 0;
+          height: 1px;
+          background: rgba(255,254,227,0.95);
+          box-shadow:
+            0 0 4px 2px   rgba(255,254,227,1.00),
+            0 0 12px 6px  rgba(252,240,175,0.70),
+            0 0 30px 14px rgba(245,222,135,0.40),
+            0 0 60px 28px rgba(232,205,100,0.18),
+            0 0 100px 45px rgba(218,188,75,0.07);
+          z-index: 10;
+          pointer-events: none;
+        }
+
+        /* BOTTOM bar — mirrors top, same distance from bottom edge */
+        .sidebar-floor {
+          position: absolute;
+          bottom: 22px; left: 0; right: 0;
+          height: 1px;
+          background: rgba(255,254,227,0.95);
+          box-shadow:
+            0 0 4px 2px   rgba(255,254,227,1.00),
+            0 0 12px 6px  rgba(252,240,175,0.70),
+            0 0 30px 14px rgba(245,222,135,0.40),
+            0 0 60px 28px rgba(232,205,100,0.18),
+            0 0 100px 45px rgba(218,188,75,0.07);
+          z-index: 10;
+          pointer-events: none;
+        }
 
         /* Gold right-edge glow on sidebar */
         .sidebar::after {
@@ -1184,7 +1111,7 @@ export default function App() {
         <div className="layout">
 
           {/* ── Left: Sidebar dashboard ── */}
-          <aside className={`sidebar ${mounted ? "in" : ""}`}>
+          <aside className={`sidebar ${mounted ? "in" : ""}`}><div className="sidebar-floor"/>
             <div className="sidebar-hdr">
               <div className="sidebar-eyebrow">Bera · AbyssGuild</div>
               <div className="sidebar-name">Abyss<br/>Guild</div>
