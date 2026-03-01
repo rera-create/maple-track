@@ -496,7 +496,7 @@ function Circuitry({ enabled }) {
         const ease = p < 0.15 ? (p / 0.15 * 0.9 + 0.1)
                    : p > 0.80 ? Math.max((1 - p) / 0.20, 0.15)
                    : 1.0;
-        const vel  = 0.07 * ease;
+        const vel  = 0.04 * ease;
         langle += vel;
         ldist  += vel;
         if (ldist >= LDIST) {
