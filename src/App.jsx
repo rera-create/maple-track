@@ -369,7 +369,7 @@ function Circuitry({ enabled }) {
     // Leader records its angle every frame. Each trailer replays
     // the leader's exact motion N frames later. No springs, no drift.
     const LDIST   = PI2 * 1.25;
-    const DELAY   = 18;
+    const DELAY   = 6;
     let   ldist   = 0;
     let   lgoing  = true;
     let   langle  = 0;
@@ -493,10 +493,10 @@ function Circuitry({ enabled }) {
 
       if (lgoing) {
         const p    = Math.min(ldist / LDIST, 1);
-        const ease = p < 0.30 ? (p / 0.30)
-                   : p > 0.70 ? Math.max((1 - p) / 0.30, 0.15)
+        const ease = p < 0.15 ? (p / 0.15 * 0.9 + 0.1)
+                   : p > 0.80 ? Math.max((1 - p) / 0.20, 0.15)
                    : 1.0;
-        const vel  = 0.04 * ease;
+        const vel  = 0.055 * ease;
         langle += vel;
         ldist  += vel;
         if (ldist >= LDIST) {
