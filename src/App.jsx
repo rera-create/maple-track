@@ -154,7 +154,7 @@ function Circuitry() {
       chars.forEach((ch, i) => {
         const a = rotOffset + step * i;
         ctx.save();
-        ctx.rotate(a); ctx.translate(0,-r); ctx.rotate(-a+Math.PI*0.5);
+        ctx.rotate(a); ctx.translate(0,-r); ctx.rotate(Math.PI);
         ctx.fillText(ch, 0, 0);
         ctx.restore();
       });
@@ -249,8 +249,9 @@ function Circuitry() {
       ctx.rotate(rot*0.05);
 
       // Tighter letter band — Ri moved closer to Ro
-      const Ro=R, Ri=R*0.88;
-      const Rmid=(Ro+Ri)*0.505;
+      // Letter radius fixed; circles hug letters with ~1px gap
+      const Rmid=R*0.94;
+      const Ro=Rmid+6, Ri=Rmid-6; // font size 10px → half=5 + 1px gap
 
       glowArc(Ro,   C.gold(1), 22, 1.6, 0.50);
       glowArc(Ri,   C.gold(1), 10, 1.0, 0.28);
@@ -326,14 +327,15 @@ function Circuitry() {
       ctx.save();
       ctx.translate(cx,cy);
       ctx.rotate(rot*0.15);
-      const R2o=R*0.62, R2i=R*0.54; // tighter gap
+      const R2mid=R*0.58;
+      const R2o=R2mid+5.5, R2i=R2mid-5.5; // font 9px → half=4.5 + 1px
       ctx.shadowColor=C.gold(0.7); ctx.shadowBlur=12;
       ctx.beginPath(); ctx.arc(0,0,R2o,0,PI2);
       ctx.strokeStyle=C.bright(0.35); ctx.lineWidth=1.2; ctx.stroke();
       ctx.beginPath(); ctx.arc(0,0,R2i,0,PI2);
       ctx.strokeStyle=C.bright(0.20); ctx.lineWidth=0.8; ctx.stroke();
       ctx.shadowBlur=0;
-      arcText(MIDDLE,(R2o+R2i)*0.505,-Math.PI/2,9,0.68);
+      arcText(MIDDLE,R2mid,-Math.PI/2,9,0.68);
       for(let i=0;i<4;i++){
         const a=(PI2/4)*i;
         ctx.save(); ctx.rotate(a); ctx.translate(0,-R2o-2);
@@ -346,14 +348,15 @@ function Circuitry() {
       ctx.save();
       ctx.translate(cx,cy);
       ctx.rotate(-rot*0.22);
-      const R3o=R*0.44, R3i=R*0.37; // tighter gap
+      const R3mid=R*0.405;
+      const R3o=R3mid+5, R3i=R3mid-5; // font 8px → half=4 + 1px
       ctx.shadowColor=C.gold(0.6); ctx.shadowBlur=10;
       ctx.beginPath(); ctx.arc(0,0,R3o,0,PI2);
       ctx.strokeStyle=C.bright(0.30); ctx.lineWidth=1.0; ctx.stroke();
       ctx.beginPath(); ctx.arc(0,0,R3i,0,PI2);
       ctx.strokeStyle=C.bright(0.18); ctx.lineWidth=0.7; ctx.stroke();
       ctx.shadowBlur=0;
-      arcText(INNER,(R3o+R3i)*0.505,-Math.PI/2,8,0.62);
+      arcText(INNER,R3mid,-Math.PI/2,8,0.62);
       ctx.restore();
 
       // ── INNERMOST RING — CW ───────────────────────────────────────────────
@@ -396,6 +399,43 @@ function Circuitry() {
       position:"absolute",inset:0,width:"100%",height:"100%",
       zIndex:0,pointerEvents:"none",opacity:0.72,
     }}/>
+  );
+}
+
+
+// ── Placeholder page — consistent shell for pages not yet built ───────────────
+function PlaceholderPage({ title, sub, icon, desc }) {
+  return (
+    <div style={{
+      display: "flex", flexDirection: "column", alignItems: "center",
+      justifyContent: "center", height: "100%", gap: 24, padding: 48,
+      textAlign: "center",
+    }}>
+      <div style={{ fontSize: 48, opacity: 0.6 }}>{icon}</div>
+      <div>
+        <div style={{
+          fontFamily: "'Bebas Neue', sans-serif",
+          fontSize: 52, letterSpacing: "0.06em",
+          color: "rgba(255,254,227,0.85)",
+          lineHeight: 1,
+          textShadow: "0 0 40px rgba(255,220,80,0.25)",
+        }}>{title}</div>
+        <div style={{
+          fontFamily: "var(--mono)", fontSize: 9,
+          letterSpacing: "0.28em", textTransform: "uppercase",
+          color: "rgba(240,220,128,0.55)", marginTop: 8,
+        }}>{sub} · Coming Soon</div>
+      </div>
+      <div style={{
+        maxWidth: 320, fontSize: 12, lineHeight: 1.7,
+        color: "rgba(255,255,255,0.30)",
+        fontFamily: "var(--mono)",
+      }}>{desc}</div>
+      <div style={{
+        width: 120, height: 1,
+        background: "linear-gradient(90deg, transparent, rgba(240,220,128,0.4), transparent)",
+      }}/>
+    </div>
   );
 }
 
@@ -1518,6 +1558,7 @@ export default function App() {
           <main className={`content ${mounted ? "in" : ""}`}>
             <Circuitry/>
 
+            {navPage === "experience" && <>
             {/* Filter bar */}
             <div className="bar">
               <div className="filters">
@@ -1594,6 +1635,13 @@ export default function App() {
                 )}
               </div>
             </div>
+
+            </>}
+
+            {navPage === "equipment" && <PlaceholderPage title="Equipment" sub="GEAR" icon="⚔️" desc="Manage your characters' gear, set effects, and upgrade paths." />}
+            {navPage === "dailies"   && <PlaceholderPage title="Dailies"   sub="DAY"  icon="🕐" desc="Track daily quests, arcane symbols, and sacred symbols across your roster." />}
+            {navPage === "weeklies"  && <PlaceholderPage title="Weeklies"  sub="WK"   icon="📅" desc="Track weekly bosses, guild quests, and maple tour across your roster." />}
+            {navPage === "bosses"    && <PlaceholderPage title="Bosses"    sub="BOSS" icon="⚠️" desc="Track boss clears and crystals across all characters." />}
 
           </main>
         </div>
