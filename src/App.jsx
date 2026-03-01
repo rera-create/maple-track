@@ -161,23 +161,139 @@ function Circuitry() {
       ctx.shadowBlur = 0;
     };
 
+    // Ornate symmetrical lance — layered with filigree details
     const drawSpear = (ctx, len, baseW, alpha) => {
+      const a = alpha;
+      ctx.save();
+
+      // ── Outer glow pass ──
       ctx.shadowColor = C.gold(0.9);
-      ctx.shadowBlur  = 14;
+      ctx.shadowBlur  = 18;
+
+      // Main spearhead — elegant diamond with stepped shoulders
       ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(baseW, len*0.15);
-      ctx.lineTo(baseW*0.5, len*0.38);
-      ctx.lineTo(0, len);
-      ctx.lineTo(-baseW*0.5, len*0.38);
-      ctx.lineTo(-baseW, len*0.15);
+      ctx.moveTo(0, 0);                         // tip
+      ctx.lineTo( baseW*0.55, len*0.12);
+      ctx.lineTo( baseW*0.90, len*0.22);        // widest point — stepped shoulder
+      ctx.lineTo( baseW*0.70, len*0.32);
+      ctx.lineTo( baseW*0.40, len*0.52);        // narrowing toward base
+      ctx.lineTo( baseW*0.18, len*0.72);
+      ctx.lineTo(0,           len*0.88);        // base tip
+      ctx.lineTo(-baseW*0.18, len*0.72);
+      ctx.lineTo(-baseW*0.40, len*0.52);
+      ctx.lineTo(-baseW*0.70, len*0.32);
+      ctx.lineTo(-baseW*0.90, len*0.22);
+      ctx.lineTo(-baseW*0.55, len*0.12);
       ctx.closePath();
-      ctx.strokeStyle=C.bright(alpha); ctx.lineWidth=1.1; ctx.stroke();
-      // Fill with faint amber
-      ctx.fillStyle=C.amber(alpha*0.12); ctx.fill();
-      ctx.shadowBlur=0;
-      ctx.beginPath(); ctx.moveTo(0,len*0.05); ctx.lineTo(0,len*0.90);
-      ctx.strokeStyle=C.glow(alpha*0.55); ctx.lineWidth=0.6; ctx.stroke();
+      ctx.fillStyle   = C.amber(a * 0.10);
+      ctx.strokeStyle = C.bright(a);
+      ctx.lineWidth   = 0.9;
+      ctx.fill(); ctx.stroke();
+
+      ctx.shadowBlur = 0;
+
+      // ── Inner spine — central glow line ──
+      ctx.beginPath();
+      ctx.moveTo(0, len*0.03);
+      ctx.lineTo(0, len*0.85);
+      ctx.strokeStyle = C.glow(a * 0.7);
+      ctx.lineWidth   = 0.7;
+      ctx.stroke();
+
+      // ── Side filigree fins at shoulder level ──
+      // Left fin
+      ctx.save();
+      ctx.shadowColor = C.amber(0.7); ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.moveTo( baseW*0.70, len*0.32);
+      ctx.lineTo( baseW*1.45, len*0.24);   // sweeps outward
+      ctx.lineTo( baseW*1.65, len*0.30);
+      ctx.lineTo( baseW*1.30, len*0.40);
+      ctx.lineTo( baseW*0.70, len*0.32);
+      ctx.fillStyle   = C.amber(a * 0.08);
+      ctx.strokeStyle = C.bright(a * 0.75);
+      ctx.lineWidth   = 0.7;
+      ctx.fill(); ctx.stroke();
+      // Right fin (mirror)
+      ctx.scale(-1, 1);
+      ctx.beginPath();
+      ctx.moveTo( baseW*0.70, len*0.32);
+      ctx.lineTo( baseW*1.45, len*0.24);
+      ctx.lineTo( baseW*1.65, len*0.30);
+      ctx.lineTo( baseW*1.30, len*0.40);
+      ctx.lineTo( baseW*0.70, len*0.32);
+      ctx.fill(); ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.restore();
+
+      // ── Cross-guard bar at 28% down ──
+      ctx.beginPath();
+      ctx.moveTo(-baseW*0.90, len*0.28);
+      ctx.lineTo( baseW*0.90, len*0.28);
+      ctx.strokeStyle = C.bright(a * 0.55);
+      ctx.lineWidth   = 0.6;
+      ctx.stroke();
+      // Guard end nodes
+      [-baseW*0.90, baseW*0.90].forEach(x => {
+        ctx.beginPath();
+        ctx.arc(x, len*0.28, 1.3, 0, PI2);
+        ctx.fillStyle = C.gold(a * 0.8);
+        ctx.fill();
+      });
+
+      // ── Second cross-guard at 55% ──
+      ctx.beginPath();
+      ctx.moveTo(-baseW*0.42, len*0.55);
+      ctx.lineTo( baseW*0.42, len*0.55);
+      ctx.strokeStyle = C.bright(a * 0.40);
+      ctx.lineWidth   = 0.5;
+      ctx.stroke();
+
+      // ── Ornamental diamond node at mid-shaft (44%) ──
+      ctx.save();
+      ctx.translate(0, len*0.44);
+      ctx.shadowColor = C.gold(0.9); ctx.shadowBlur = 8;
+      const dn = baseW * 0.22;
+      ctx.beginPath();
+      ctx.moveTo(0, -dn); ctx.lineTo(dn*0.6, 0); ctx.lineTo(0, dn); ctx.lineTo(-dn*0.6, 0);
+      ctx.closePath();
+      ctx.fillStyle   = C.glow(a * 0.35);
+      ctx.strokeStyle = C.bright(a * 0.85);
+      ctx.lineWidth   = 0.65;
+      ctx.fill(); ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.restore();
+
+      // ── Small diamond node at shoulder inflection (32%) ──
+      ctx.save();
+      ctx.translate(0, len*0.32);
+      const sn = baseW * 0.12;
+      ctx.beginPath();
+      ctx.moveTo(0, -sn); ctx.lineTo(sn*0.6, 0); ctx.lineTo(0, sn); ctx.lineTo(-sn*0.6, 0);
+      ctx.closePath();
+      ctx.fillStyle   = C.amber(a * 0.4);
+      ctx.strokeStyle = C.bright(a * 0.6);
+      ctx.lineWidth   = 0.5;
+      ctx.fill(); ctx.stroke();
+      ctx.restore();
+
+      // ── Tip accent — tiny starburst ──
+      ctx.save();
+      ctx.translate(0, len*0.04);
+      ctx.shadowColor = C.glow(1); ctx.shadowBlur = 10;
+      for(let i=0;i<4;i++){
+        const angle = (PI2/4)*i;
+        ctx.beginPath();
+        ctx.moveTo(0,0);
+        ctx.lineTo(Math.cos(angle)*baseW*0.30, Math.sin(angle)*baseW*0.30);
+        ctx.strokeStyle = C.bright(a*0.55);
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+      ctx.restore();
+
+      ctx.restore();
     };
 
     const drawStar = (ctx, r1, r2, alpha, fill=true) => {
@@ -243,150 +359,426 @@ function Circuitry() {
       const cx=W*0.50, cy=H*0.50;
       const R=Math.min(W,H)*0.40;
 
-      // ── OUTERMOST RING ────────────────────────────────────────────────────
+      // Helper: draw a regular polygon
+      const drawPoly = (n, r, alpha, lw=0.7) => {
+        ctx.beginPath();
+        for(let i=0;i<n;i++){
+          const a=(PI2/n)*i-Math.PI/2;
+          i===0?ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r):ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);
+        }
+        ctx.closePath();
+        ctx.strokeStyle=C.bright(alpha); ctx.lineWidth=lw; ctx.stroke();
+      };
+
+      // Helper: draw an arcane sigil (small rune-like cross/arrow)
+      const drawSigil = (size, alpha) => {
+        ctx.beginPath();
+        ctx.moveTo(0,-size); ctx.lineTo(0,size);
+        ctx.moveTo(-size,0); ctx.lineTo(size,0);
+        ctx.strokeStyle=C.bright(alpha); ctx.lineWidth=0.5; ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-size*0.5,-size*0.5); ctx.lineTo(size*0.5,-size*0.5);
+        ctx.moveTo(-size*0.5, size*0.5); ctx.lineTo(size*0.5, size*0.5);
+        ctx.stroke();
+        ctx.beginPath(); ctx.arc(0,0,size*0.28,0,PI2);
+        ctx.strokeStyle=C.gold(alpha*0.7); ctx.lineWidth=0.4; ctx.stroke();
+      };
+
+      // Helper: radial line burst
+      const drawBurst = (r1, r2, count, alpha) => {
+        for(let i=0;i<count;i++){
+          const a=(PI2/count)*i;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a)*r1,Math.sin(a)*r1);
+          ctx.lineTo(Math.cos(a)*r2,Math.sin(a)*r2);
+          ctx.strokeStyle=C.bright(alpha); ctx.lineWidth=0.5; ctx.stroke();
+        }
+      };
+
+
+      // ════════════════════════════════════════════════════════════════════
+      // ── OUTERMOST LETTER RING ─────────────────────────────────────────
+      // ════════════════════════════════════════════════════════════════════
       ctx.save();
       ctx.translate(cx,cy);
       ctx.rotate(rot*0.05);
 
-      // Tighter letter band — Ri moved closer to Ro
-      // Letter radius fixed; circles hug letters with ~1px gap
       const Rmid=R*0.94;
-      const Ro=Rmid+6, Ri=Rmid-6; // font size 10px → half=5 + 1px gap
+      const Ro=Rmid+6, Ri=Rmid-6;
 
-      glowArc(Ro,   C.gold(1), 22, 1.6, 0.50);
-      glowArc(Ri,   C.gold(1), 10, 1.0, 0.28);
-      glowArc(Ro+8, C.amber(1), 4, 0.5, 0.12);
+      // Three concentric boundary rings
+      glowArc(Ro+14, C.amber(0.6), 6, 0.4, 0.08);
+      glowArc(Ro,    C.gold(1),   22, 1.6, 0.50);
+      glowArc(Ri,    C.gold(1),   10, 1.0, 0.28);
+      glowArc(Ri-10, C.amber(0.4), 4, 0.4, 0.10);
 
-      for(let i=0;i<96;i++){
-        const a=(PI2/96)*i;
-        const len=i%12===0?11:i%4===0?6:2.5;
-        const alp=i%12===0?0.65:i%4===0?0.32:0.13;
-        ctx.shadowColor=i%12===0?C.gold(1):"transparent";
-        ctx.shadowBlur=i%12===0?8:0;
+      // Outer tick marks — 3 sizes
+      for(let i=0;i<120;i++){
+        const a=(PI2/120)*i;
+        const major=i%15===0, semi=i%5===0;
+        const len=major?14:semi?7:3;
+        const alp=major?0.70:semi?0.35:0.12;
+        ctx.shadowColor=major?C.gold(1):"transparent"; ctx.shadowBlur=major?9:0;
         ctx.beginPath();
         ctx.moveTo(Math.cos(a)*Ro,Math.sin(a)*Ro);
-        ctx.lineTo(Math.cos(a)*(Ro-len),Math.sin(a)*(Ro-len));
-        ctx.strokeStyle=C.bright(alp); ctx.lineWidth=0.7; ctx.stroke();
+        ctx.lineTo(Math.cos(a)*(Ro+len),Math.sin(a)*(Ro+len));
+        ctx.strokeStyle=C.bright(alp); ctx.lineWidth=major?1.0:0.6; ctx.stroke();
       }
       ctx.shadowBlur=0;
 
+      // Inner tick marks (inside Ri, pointing inward)
+      for(let i=0;i<48;i++){
+        const a=(PI2/48)*i;
+        const len=i%8===0?8:i%4===0?4:2;
+        const alp=i%8===0?0.35:i%4===0?0.18:0.08;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a)*Ri,Math.sin(a)*Ri);
+        ctx.lineTo(Math.cos(a)*(Ri-len),Math.sin(a)*(Ri-len));
+        ctx.strokeStyle=C.bright(alp); ctx.lineWidth=0.5; ctx.stroke();
+      }
+
       arcText(OUTER, Rmid, -Math.PI/2, 10, 0.80);
 
-      // Spears
+      // ── 8 Ornate Lances radiating outward ────────────────────────────
       const spikeA=Array.from({length:8},(_,i)=>(PI2/8)*i-Math.PI/2);
       spikeA.forEach((a,i)=>{
         const isCard=i%2===0;
         ctx.save(); ctx.rotate(a); ctx.translate(0,-Ro-4);
-        drawSpear(ctx, isCard?R*0.50:R*0.30, isCard?10:7, isCard?0.68:0.48);
+        drawSpear(ctx, isCard?R*0.52:R*0.32, isCard?11:8, isCard?0.70:0.52);
         ctx.restore();
       });
+      // Crown stars at tips of cardinal lances
       spikeA.filter((_,i)=>i%2===0).forEach(a=>{
-        ctx.save(); ctx.rotate(a); ctx.translate(0,-(Ro+4+R*0.50*0.94));
-        drawStar8(ctx,26,8,0.80);
+        ctx.save(); ctx.rotate(a); ctx.translate(0,-(Ro+6+R*0.52));
+        drawStar8(ctx,28,9,0.82);
         ctx.restore();
       });
+      // Smaller stars at intercardinal lance tips
       spikeA.filter((_,i)=>i%2!==0).forEach(a=>{
-        ctx.save(); ctx.rotate(a); ctx.translate(0,-(Ro+4+R*0.30*0.94));
-        drawStar(ctx,18,6,0.62);
+        ctx.save(); ctx.rotate(a); ctx.translate(0,-(Ro+6+R*0.32));
+        drawStar(ctx,20,7,0.65);
         ctx.restore();
       });
+      // Gear medallions between lances
       for(let i=0;i<8;i++){
         const a=(PI2/8)*i-Math.PI/2+Math.PI/16;
         ctx.save();
-        ctx.translate(Math.cos(a)*(Ro+R*0.13),Math.sin(a)*(Ro+R*0.13));
-        drawGear(ctx,R*0.072,0.45);
+        ctx.translate(Math.cos(a)*(Ro+R*0.12),Math.sin(a)*(Ro+R*0.12));
+        drawGear(ctx,R*0.065,0.42);
         ctx.restore();
       }
       ctx.restore();
 
-      // ── OUTER-MIDDLE RING — CCW ───────────────────────────────────────────
+
+      // ════════════════════════════════════════════════════════════════════
+      // ── GEODESIC BAND — rotating hexagon + 12-gon frame ─────────────
+      // ════════════════════════════════════════════════════════════════════
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate(-rot*0.08);
+      const Rhex=R*0.85;
+      ctx.shadowColor=C.amber(0.3); ctx.shadowBlur=5;
+      drawPoly(12, Rhex, 0.18, 0.6);
+      ctx.shadowBlur=0;
+      // Chord lines across the 12-gon (every other vertex connected)
+      ctx.beginPath();
+      for(let i=0;i<12;i++){
+        const a1=(PI2/12)*i-Math.PI/2, a2=(PI2/12)*(i+4)-Math.PI/2;
+        ctx.moveTo(Math.cos(a1)*Rhex,Math.sin(a1)*Rhex);
+        ctx.lineTo(Math.cos(a2)*Rhex,Math.sin(a2)*Rhex);
+      }
+      ctx.strokeStyle=C.bright(0.07); ctx.lineWidth=0.5; ctx.stroke();
+      // Small diamond nodes at each vertex of 12-gon
+      for(let i=0;i<12;i++){
+        const a=(PI2/12)*i-Math.PI/2;
+        ctx.save();
+        ctx.translate(Math.cos(a)*Rhex,Math.sin(a)*Rhex);
+        ctx.rotate(a+Math.PI/2);
+        const dn=3.5;
+        ctx.beginPath();
+        ctx.moveTo(0,-dn); ctx.lineTo(dn*0.5,0); ctx.lineTo(0,dn); ctx.lineTo(-dn*0.5,0);
+        ctx.closePath();
+        ctx.fillStyle=C.amber(0.30);
+        ctx.strokeStyle=C.bright(0.45); ctx.lineWidth=0.5;
+        ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
+      ctx.restore();
+
+
+      // ════════════════════════════════════════════════════════════════════
+      // ── OUTER-MIDDLE RING WITH SEGMENTS ──────────────────────────────
+      // ════════════════════════════════════════════════════════════════════
       ctx.save();
       ctx.translate(cx,cy);
       ctx.rotate(-rot*0.10);
       const R1b=R*0.74;
-      ctx.shadowColor=C.amber(0.5); ctx.shadowBlur=8;
+      // Three rings in the band
+      ctx.shadowColor=C.amber(0.5); ctx.shadowBlur=10;
       ctx.beginPath(); ctx.arc(0,0,R1b,0,PI2);
-      ctx.strokeStyle=C.bright(0.22); ctx.lineWidth=0.9; ctx.stroke();
-      ctx.beginPath(); ctx.arc(0,0,R1b*0.91,0,PI2);
-      ctx.strokeStyle=C.bright(0.13); ctx.lineWidth=0.6; ctx.stroke();
+      ctx.strokeStyle=C.bright(0.28); ctx.lineWidth=1.1; ctx.stroke();
+      ctx.beginPath(); ctx.arc(0,0,R1b*0.935,0,PI2);
+      ctx.strokeStyle=C.bright(0.18); ctx.lineWidth=0.7; ctx.stroke();
+      ctx.beginPath(); ctx.arc(0,0,R1b*0.870,0,PI2);
+      ctx.strokeStyle=C.bright(0.10); ctx.lineWidth=0.5; ctx.stroke();
       ctx.shadowBlur=0;
+      // Arc segments — dashed pill shapes
       for(let i=0;i<24;i++){
-        const a1=(PI2/24)*i, a2=a1+(PI2/24)*0.48;
-        ctx.beginPath(); ctx.arc(0,0,R1b*0.955,a1,a2);
-        ctx.strokeStyle=C.gold(0.35); ctx.lineWidth=2.2; ctx.stroke();
+        const a1=(PI2/24)*i, a2=a1+(PI2/24)*0.50;
+        ctx.beginPath(); ctx.arc(0,0,R1b*0.952,a1,a2);
+        ctx.strokeStyle=C.gold(0.40); ctx.lineWidth=2.4; ctx.stroke();
       }
+      // Radial spokes connecting outer/inner ring of this band at 12 positions
+      for(let i=0;i<12;i++){
+        const a=(PI2/12)*i;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a)*R1b*0.87,Math.sin(a)*R1b*0.87);
+        ctx.lineTo(Math.cos(a)*R1b*1.00,Math.sin(a)*R1b*1.00);
+        ctx.strokeStyle=C.bright(0.22); ctx.lineWidth=0.8; ctx.stroke();
+      }
+      // Brackets at 6 positions
       for(let i=0;i<6;i++){
         const a=(PI2/6)*i;
-        ctx.save(); ctx.rotate(a); ctx.translate(0,-R1b*0.95);
-        drawBracket(ctx,6,5,0.38);
+        ctx.save(); ctx.rotate(a); ctx.translate(0,-R1b*0.952);
+        drawBracket(ctx,6,5,0.40);
+        ctx.restore();
+      }
+      // Sigils at 3 positions
+      for(let i=0;i<3;i++){
+        const a=(PI2/3)*i+Math.PI/6;
+        ctx.save();
+        ctx.translate(Math.cos(a)*R1b*0.952,Math.sin(a)*R1b*0.952);
+        ctx.rotate(a+Math.PI/2);
+        drawSigil(5,0.30);
         ctx.restore();
       }
       ctx.restore();
 
-      // ── MIDDLE LETTER RING — CW, tighter band ────────────────────────────
+
+      // ════════════════════════════════════════════════════════════════════
+      // ── ROTATING HEXAGRAM FRAME ───────────────────────────────────────
+      // ════════════════════════════════════════════════════════════════════
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate(rot*0.07);
+      const Rhg=R*0.67;
+      // Star of David style — two overlapping triangles
+      ctx.shadowColor=C.gold(0.5); ctx.shadowBlur=8;
+      [0, Math.PI/3].forEach((offset,ti)=>{
+        ctx.beginPath();
+        for(let i=0;i<3;i++){
+          const a=(PI2/3)*i+offset-Math.PI/2;
+          i===0?ctx.moveTo(Math.cos(a)*Rhg,Math.sin(a)*Rhg):ctx.lineTo(Math.cos(a)*Rhg,Math.sin(a)*Rhg);
+        }
+        ctx.closePath();
+        ctx.strokeStyle=C.bright(ti===0?0.22:0.15); ctx.lineWidth=0.8; ctx.stroke();
+      });
+      ctx.shadowBlur=0;
+      // Hexagon connecting the 6 hexagram points
+      drawPoly(6, Rhg, 0.12, 0.5);
+      // Small accent circles at each of the 6 points
+      for(let i=0;i<6;i++){
+        const a=(PI2/6)*i-Math.PI/2;
+        ctx.beginPath(); ctx.arc(Math.cos(a)*Rhg,Math.sin(a)*Rhg,3,0,PI2);
+        ctx.strokeStyle=C.gold(0.5); ctx.lineWidth=0.6; ctx.stroke();
+        ctx.fillStyle=C.amber(0.15); ctx.fill();
+      }
+      ctx.restore();
+
+
+      // ════════════════════════════════════════════════════════════════════
+      // ── MIDDLE LETTER RING ────────────────────────────────────────────
+      // ════════════════════════════════════════════════════════════════════
       ctx.save();
       ctx.translate(cx,cy);
       ctx.rotate(rot*0.15);
       const R2mid=R*0.58;
-      const R2o=R2mid+5.5, R2i=R2mid-5.5; // font 9px → half=4.5 + 1px
+      const R2o=R2mid+5.5, R2i=R2mid-5.5;
       ctx.shadowColor=C.gold(0.7); ctx.shadowBlur=12;
       ctx.beginPath(); ctx.arc(0,0,R2o,0,PI2);
-      ctx.strokeStyle=C.bright(0.35); ctx.lineWidth=1.2; ctx.stroke();
+      ctx.strokeStyle=C.bright(0.38); ctx.lineWidth=1.3; ctx.stroke();
       ctx.beginPath(); ctx.arc(0,0,R2i,0,PI2);
-      ctx.strokeStyle=C.bright(0.20); ctx.lineWidth=0.8; ctx.stroke();
+      ctx.strokeStyle=C.bright(0.22); ctx.lineWidth=0.8; ctx.stroke();
+      // Extra hairline outside
+      ctx.beginPath(); ctx.arc(0,0,R2o+7,0,PI2);
+      ctx.strokeStyle=C.amber(0.12); ctx.lineWidth=0.4; ctx.stroke();
       ctx.shadowBlur=0;
       arcText(MIDDLE,R2mid,-Math.PI/2,9,0.68);
+      // 4 mini lances between letter ring and hexagram
       for(let i=0;i<4;i++){
         const a=(PI2/4)*i;
         ctx.save(); ctx.rotate(a); ctx.translate(0,-R2o-2);
-        drawSpear(ctx,R*0.13,4.5,0.42);
+        drawSpear(ctx,R*0.14,5,0.45);
+        ctx.restore();
+      }
+      // 8 tick marks
+      for(let i=0;i<32;i++){
+        const a=(PI2/32)*i;
+        if(i%4===0){
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a)*R2o,Math.sin(a)*R2o);
+          ctx.lineTo(Math.cos(a)*(R2o+5),Math.sin(a)*(R2o+5));
+          ctx.strokeStyle=C.bright(0.28); ctx.lineWidth=0.6; ctx.stroke();
+        }
+      }
+      ctx.restore();
+
+
+      // ════════════════════════════════════════════════════════════════════
+      // ── PENTAGRAM FRAME — counter-rotates ─────────────────────────────
+      // ════════════════════════════════════════════════════════════════════
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate(-rot*0.12);
+      const Rpent=R*0.50;
+      ctx.shadowColor=C.amber(0.3); ctx.shadowBlur=6;
+      // Pentagon outline
+      drawPoly(5, Rpent, 0.13, 0.5);
+      // Pentagram star lines
+      ctx.beginPath();
+      const ppts=Array.from({length:5},(_,i)=>{
+        const a=(PI2/5)*i-Math.PI/2;
+        return [Math.cos(a)*Rpent,Math.sin(a)*Rpent];
+      });
+      // Connect every other vertex for pentagram
+      [0,2,4,1,3,0].forEach((vi,i)=>{
+        i===0?ctx.moveTo(ppts[vi][0],ppts[vi][1]):ctx.lineTo(ppts[vi][0],ppts[vi][1]);
+      });
+      ctx.strokeStyle=C.bright(0.14); ctx.lineWidth=0.6; ctx.stroke();
+      ctx.shadowBlur=0;
+      // Tiny glyphs at each pentagon vertex
+      for(let i=0;i<5;i++){
+        const a=(PI2/5)*i-Math.PI/2;
+        ctx.save();
+        ctx.translate(Math.cos(a)*Rpent,Math.sin(a)*Rpent);
+        ctx.rotate(a+Math.PI/2);
+        drawSigil(4.5,0.28);
         ctx.restore();
       }
       ctx.restore();
 
-      // ── INNER LETTER RING — CCW, tighter band ────────────────────────────
+
+      // ════════════════════════════════════════════════════════════════════
+      // ── INNER LETTER RING ─────────────────────────────────────────────
+      // ════════════════════════════════════════════════════════════════════
       ctx.save();
       ctx.translate(cx,cy);
       ctx.rotate(-rot*0.22);
       const R3mid=R*0.405;
-      const R3o=R3mid+5, R3i=R3mid-5; // font 8px → half=4 + 1px
+      const R3o=R3mid+5, R3i=R3mid-5;
       ctx.shadowColor=C.gold(0.6); ctx.shadowBlur=10;
       ctx.beginPath(); ctx.arc(0,0,R3o,0,PI2);
-      ctx.strokeStyle=C.bright(0.30); ctx.lineWidth=1.0; ctx.stroke();
+      ctx.strokeStyle=C.bright(0.32); ctx.lineWidth=1.0; ctx.stroke();
       ctx.beginPath(); ctx.arc(0,0,R3i,0,PI2);
-      ctx.strokeStyle=C.bright(0.18); ctx.lineWidth=0.7; ctx.stroke();
+      ctx.strokeStyle=C.bright(0.20); ctx.lineWidth=0.7; ctx.stroke();
+      // Extra thin outer ring
+      ctx.beginPath(); ctx.arc(0,0,R3o+6,0,PI2);
+      ctx.strokeStyle=C.amber(0.10); ctx.lineWidth=0.4; ctx.stroke();
       ctx.shadowBlur=0;
       arcText(INNER,R3mid,-Math.PI/2,8,0.62);
+      // Radial burst between inner and middle rings
+      drawBurst(R3o+1, R2i-5, 24, 0.08);
       ctx.restore();
 
-      // ── INNERMOST RING — CW ───────────────────────────────────────────────
+
+      // ════════════════════════════════════════════════════════════════════
+      // ── SQUARE + DIAMOND FRAME ────────────────────────────────────────
+      // ════════════════════════════════════════════════════════════════════
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate(rot*0.18);
+      const Rsq=R*0.325;
+      ctx.shadowColor=C.gold(0.4); ctx.shadowBlur=7;
+      drawPoly(4, Rsq, 0.22, 0.7);          // square
+      ctx.rotate(Math.PI/4);
+      drawPoly(4, Rsq*0.88, 0.12, 0.5);     // rotated inner square = diamond
+      ctx.shadowBlur=0;
+      // Corner nodes on outer square
+      for(let i=0;i<4;i++){
+        const a=(PI2/4)*i-Math.PI/2;
+        ctx.beginPath(); ctx.arc(Math.cos(a)*Rsq,Math.sin(a)*Rsq,2.5,0,PI2);
+        ctx.fillStyle=C.gold(0.55); ctx.fill();
+        ctx.strokeStyle=C.bright(0.70); ctx.lineWidth=0.5; ctx.stroke();
+      }
+      ctx.restore();
+
+
+      // ════════════════════════════════════════════════════════════════════
+      // ── INNERMOST DASHED RING + SEGMENTED ARC ────────────────────────
+      // ════════════════════════════════════════════════════════════════════
       ctx.save();
       ctx.translate(cx,cy);
       ctx.rotate(rot*0.32);
       const R4=R*0.26;
       ctx.shadowColor=C.amber(0.6); ctx.shadowBlur=8;
       ctx.beginPath(); ctx.arc(0,0,R4,0,PI2);
-      ctx.strokeStyle=C.bright(0.30); ctx.lineWidth=0.9; ctx.stroke();
+      ctx.strokeStyle=C.bright(0.32); ctx.lineWidth=1.0; ctx.stroke();
+      ctx.beginPath(); ctx.arc(0,0,R4*0.82,0,PI2);
+      ctx.strokeStyle=C.bright(0.14); ctx.lineWidth=0.5; ctx.stroke();
       ctx.shadowBlur=0;
+      // Segmented arcs
       for(let i=0;i<20;i++){
-        const a1=(PI2/20)*i, a2=a1+(PI2/20)*0.45;
+        const a1=(PI2/20)*i, a2=a1+(PI2/20)*0.48;
         ctx.beginPath(); ctx.arc(0,0,R4,a1,a2);
-        ctx.strokeStyle=C.gold(0.45); ctx.lineWidth=2.0; ctx.stroke();
+        ctx.strokeStyle=C.gold(0.48); ctx.lineWidth=2.2; ctx.stroke();
       }
+      // 4 inward micro-lances
       for(let i=0;i<4;i++){
         const a=(PI2/4)*i;
         ctx.save(); ctx.rotate(a+Math.PI); ctx.translate(0,-R4+2);
-        drawSpear(ctx,R*0.07,3,0.35);
+        drawSpear(ctx,R*0.07,3.5,0.38);
         ctx.restore();
+      }
+      // Radial lines from center to innermost ring (like a compass rose)
+      for(let i=0;i<8;i++){
+        const a=(PI2/8)*i;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a)*R4*0.20,Math.sin(a)*R4*0.20);
+        ctx.lineTo(Math.cos(a)*R4*0.80,Math.sin(a)*R4*0.80);
+        ctx.strokeStyle=C.bright(0.12); ctx.lineWidth=0.5; ctx.stroke();
       }
       ctx.restore();
 
-      // ── CENTRAL STAR ──────────────────────────────────────────────────────
+
+      // ════════════════════════════════════════════════════════════════════
+      // ── CENTRAL COMPLEX — layered stars + orb ────────────────────────
+      // ════════════════════════════════════════════════════════════════════
       ctx.save();
       ctx.translate(cx,cy);
-      ctx.rotate(rot*0.50);
-      drawStar8(ctx,R*0.15,R*0.05,0.85);
+
+      // Outer star slowly CCW
+      ctx.save(); ctx.rotate(-rot*0.40);
+      drawStar8(ctx,R*0.155,R*0.055,0.70);
       ctx.restore();
+
+      // Inner star faster CW
+      ctx.save(); ctx.rotate(rot*0.70);
+      drawStar(ctx,R*0.095,R*0.035,0.60,true);
+      ctx.restore();
+
+      // Central glowing orb
+      ctx.shadowColor=C.glow(1); ctx.shadowBlur=20;
+      const orbGrad=ctx.createRadialGradient(0,0,0,0,0,R*0.055);
+      orbGrad.addColorStop(0,C.bright(0.75));
+      orbGrad.addColorStop(0.5,C.gold(0.45));
+      orbGrad.addColorStop(1,C.amber(0));
+      ctx.beginPath(); ctx.arc(0,0,R*0.055,0,PI2);
+      ctx.fillStyle=orbGrad; ctx.fill();
+      ctx.shadowBlur=0;
+
+      // 4-axis crosshair lines through center
+      ctx.save(); ctx.rotate(rot*0.25);
+      for(let i=0;i<4;i++){
+        const a=(PI2/4)*i;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a)*R*0.06,Math.sin(a)*R*0.06);
+        ctx.lineTo(Math.cos(a)*R*0.22,Math.sin(a)*R*0.22);
+        ctx.strokeStyle=C.bright(0.18); ctx.lineWidth=0.5; ctx.stroke();
+      }
+      ctx.restore();
+
+      ctx.restore();
+
 
       rot+=0.006;
       raf=requestAnimationFrame(draw);
@@ -654,7 +1046,6 @@ function PrismCard({ char, index, isSel, isHov, onClick, onEnter, onLeave }) {
 }
 
 export default function App() {
-  const [filter,   setFilter]  = useState("All");
   const [selected, setSelected] = useState(null);
   const [mounted,  setMounted]  = useState(false);
   const [hovered,  setHovered]  = useState(null);
@@ -662,7 +1053,6 @@ export default function App() {
 
   useEffect(() => { setTimeout(() => setMounted(true), 60); }, []);
 
-  const filtered = characters.filter(c => filter === "All" || c.badge === filter);
   const sel = selected;
 
   // Lock page scroll — bar must stay fixed at viewport bottom
@@ -1497,13 +1887,6 @@ export default function App() {
             <div className="sidebar-hdr">
               <div className="sidebar-eyebrow">Bera · AbyssGuild</div>
               <div className="sidebar-name">Abyss<br/>Guild</div>
-              <div className="sidebar-meta">
-                <div className="sidebar-dot"/>
-                <span className="sidebar-server">Online</span>
-                <span className="sidebar-count">
-                  <strong>{characters.length}</strong> characters
-                </span>
-              </div>
             </div>
 
             <div className="sidebar-body">
@@ -1559,22 +1942,9 @@ export default function App() {
             <Circuitry/>
 
             {navPage === "experience" && <>
-            {/* Filter bar */}
-            <div className="bar">
-              <div className="filters">
-                {["All","Main","Farming","In Progress"].map(f => (
-                  <button key={f}
-                    className={`fbtn ${filter === f ? "on" : ""}`}
-                    onClick={() => setFilter(f)}
-                  >{f}</button>
-                ))}
-              </div>
-              <span className="bar-ct"><strong>{filtered.length}</strong> / {characters.length}</span>
-            </div>
-
             {/* Prism grid */}
             <div className="grid">
-              {filtered.map((char, i) => (
+              {characters.map((char, i) => (
                 <PrismCard
                   key={char.name}
                   char={char}
