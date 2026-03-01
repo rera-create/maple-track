@@ -363,7 +363,7 @@ function Circuitry({ enabled }) {
       ctx.shadowBlur = 0;
     };
 
-    let rot=0;
+    let rot=0, tick=0;
     const draw = () => {
       drawRef.current = draw;
       const W=canvas.width, H=canvas.height;
@@ -453,32 +453,49 @@ function Circuitry({ enabled }) {
 
       arcText(OUTER, Rmid, -Math.PI/2, 14, 0.80);
 
-      // ── 8 Ornate Lances radiating outward ────────────────────────────
-      const spikeA=Array.from({length:8},(_,i)=>(PI2/8)*i-Math.PI/2);
-      spikeA.forEach((a,i)=>{
-        const isCard=i%2===0;
-        ctx.save(); ctx.rotate(a); ctx.translate(0,-Ro-4);
-        drawSpear(ctx, isCard?R*0.52:R*0.32, isCard?11:8, isCard?0.70:0.52);
+      // ── 5 Ornate Lances — spring-flock behaviour ──────────────────────
+      // A group angle drifts slowly around the ring. Each lance has a
+      // rest offset from its neighbours. When the group accelerates the
+      // lances spread (momentum), then the spring pulls them back together.
+      const N = 5;
+      // Evenly-spaced rest positions (angular gap between each lance)
+      const REST_GAP  = (PI2 * 0.18);   // ~65° apart at rest
+      const SPREAD_AMP = 0.13;           // how far they stretch out
+      const SPREAD_FREQ = 0.008;         // how fast the spread oscillates
+
+      // Group leader angle — drifts slowly CW independent of ring rotation
+      const groupAngle = tick * 0.004;
+
+      const lanceAngles = Array.from({length: N}, (_, i) => {
+        // Each lance stretches away from its rest position by an amount
+        // that depends on how far it is from the "front" of the group.
+        // Lance 0 leads, lance N-1 trails. The front compresses first,
+        // the back lags — then the spring snaps them all back.
+        const restA   = groupAngle + (i - (N-1)*0.5) * REST_GAP;
+        const stretch = Math.sin(tick * SPREAD_FREQ) * SPREAD_AMP * (i - (N-1)*0.5);
+        return restA + stretch;
+      });
+
+      // Draw the 5 big lances + stars at their tips
+      lanceAngles.forEach((a) => {
+        ctx.save(); ctx.rotate(a); ctx.translate(0, -Ro - 4);
+        drawSpear(ctx, R*0.52, 11, 0.70);
         ctx.restore();
       });
-      // Crown stars at tips of cardinal lances
-      spikeA.filter((_,i)=>i%2===0).forEach(a=>{
-        ctx.save(); ctx.rotate(a); ctx.translate(0,-(Ro+6+R*0.52));
-        drawStar8(ctx,28,9,0.82);
+      // Crown star at each lance tip
+      lanceAngles.forEach((a) => {
+        ctx.save(); ctx.rotate(a); ctx.translate(0, -(Ro + 6 + R*0.52));
+        drawStar8(ctx, 28, 9, 0.82);
         ctx.restore();
       });
-      // Smaller stars at intercardinal lance tips
-      spikeA.filter((_,i)=>i%2!==0).forEach(a=>{
-        ctx.save(); ctx.rotate(a); ctx.translate(0,-(Ro+6+R*0.32));
-        drawStar(ctx,20,7,0.65);
-        ctx.restore();
-      });
-      // Gear medallions between lances
-      for(let i=0;i<8;i++){
-        const a=(PI2/8)*i-Math.PI/2+Math.PI/16;
+      // Gear medallions sit midway between adjacent lances
+      for (let i = 0; i < N - 1; i++) {
+        const aL = lanceAngles[i];
+        const aR = lanceAngles[i + 1];
+        const mid = aL + 0.5 * ((aR - aL + Math.PI*3) % PI2 - Math.PI);
         ctx.save();
-        ctx.translate(Math.cos(a)*(Ro+R*0.12),Math.sin(a)*(Ro+R*0.12));
-        drawGear(ctx,R*0.065,0.42);
+        ctx.translate(Math.cos(mid)*(Ro+R*0.12), Math.sin(mid)*(Ro+R*0.12));
+        drawGear(ctx, R*0.065, 0.42);
         ctx.restore();
       }
       ctx.restore();
@@ -794,7 +811,7 @@ function Circuitry({ enabled }) {
       ctx.restore();
 
 
-      rot+=0.010;
+      rot+=0.010; tick++;
       if (enabledRef.current) raf=requestAnimationFrame(draw);
     };
     draw();
@@ -804,6 +821,120 @@ function Circuitry({ enabled }) {
     <canvas ref={canvasRef} style={{
       position:"absolute",inset:0,width:"100%",height:"100%",
       zIndex:0,pointerEvents:"none",opacity:0.72,
+      filter:"drop-shadow(0 0 8px rgba(255,220,80,0.35)) drop-shadow(0 0 24px rgba(255,200,60,0.18)) drop-shadow(0 0 60px rgba(240,180,40,0.08))",
+    }}/>
+  );
+}
+
+
+// ── Ghost orbs — particles drifting outward from center ──────────────────────
+function GhostOrbs({ enabled }) {
+  const canvasRef = useRef(null);
+  const enabledRef = useRef(enabled);
+  const drawRef = useRef(null);
+  useEffect(() => {
+    enabledRef.current = enabled;
+    if (enabled && drawRef.current) drawRef.current();
+  }, [enabled]);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    let raf;
+    const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
+    resize();
+    window.addEventListener("resize", resize);
+    const PI2 = Math.PI * 2;
+
+    const spawn = () => {
+      // Start near center with random scatter radius
+      const angle = Math.random() * PI2;
+      const birthR = Math.random() * 18; // tiny origin cluster
+      const speed  = 0.12 + Math.random() * 0.28; // px/frame outward
+      const wobble = (Math.random() - 0.5) * 0.018; // angular drift
+      return {
+        angle,
+        r:      birthR,              // distance from center
+        speed,
+        wobble,
+        size:   0.6 + Math.random() * 2.2,
+        maxAl:  0.08 + Math.random() * 0.30,
+        al:     0,                   // fade in
+        ph:     Math.random() * PI2, // shimmer phase
+        life:   0,                   // frames alive
+        maxLife: 180 + Math.random() * 320,
+      };
+    };
+
+    const orbs = Array.from({ length: 55 }, () => {
+      const o = spawn();
+      // Stagger initial positions so they don't all start at center
+      o.r = Math.random() * 340;
+      o.life = Math.floor(Math.random() * o.maxLife);
+      return o;
+    });
+
+    let t = 0;
+    const draw = () => {
+      drawRef.current = draw;
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
+      const cx = W * 0.50, cy = H * 0.50;
+      const maxR = Math.sqrt(cx * cx + cy * cy) + 40; // diagonal + buffer
+
+      for (let i = 0; i < orbs.length; i++) {
+        const o = orbs[i];
+
+        // Move outward + wobble angle
+        o.r     += o.speed;
+        o.angle += o.wobble;
+        o.life  += 1;
+
+        // Respawn when reaching edge or max life
+        if (o.r > maxR || o.life > o.maxLife) {
+          orbs[i] = spawn();
+          continue;
+        }
+
+        // Fade in over first 40 frames, fade out last 60
+        const fadeIn  = Math.min(1, o.life / 40);
+        const fadeOut = Math.min(1, (o.maxLife - o.life) / 60);
+        const shimmer = 0.55 + 0.45 * Math.sin(t * 0.015 + o.ph);
+        const al = o.maxAl * fadeIn * fadeOut * shimmer;
+        if (al < 0.004) continue;
+
+        const x = cx + Math.cos(o.angle) * o.r;
+        const y = cy + Math.sin(o.angle) * o.r;
+
+        // Soft radial glow — two concentric circles
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, o.size * 3.5);
+        grad.addColorStop(0,   `rgba(255,250,210,${Math.min(al, 0.95)})`);
+        grad.addColorStop(0.4, `rgba(255,230,140,${al * 0.5})`);
+        grad.addColorStop(1,   `rgba(255,200,80,0)`);
+
+        ctx.beginPath();
+        ctx.arc(x, y, o.size * 3.5, 0, PI2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // Crisp core dot
+        ctx.beginPath();
+        ctx.arc(x, y, o.size * 0.5, 0, PI2);
+        ctx.fillStyle = `rgba(255,254,230,${Math.min(al * 2.2, 0.90)})`;
+        ctx.fill();
+      }
+
+      t++;
+      if (enabledRef.current) raf = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
+  }, []);
+  return (
+    <canvas ref={canvasRef} style={{
+      position: "absolute", inset: 0,
+      width: "100%", height: "100%",
+      zIndex: 1, pointerEvents: "none",
     }}/>
   );
 }
@@ -2096,6 +2227,7 @@ export default function App() {
           {/* ── Right: Cards + detail ── */}
           <main className={`content ${mounted ? "in" : ""}`}>
             <Circuitry enabled={animEnabled}/>
+            <GhostOrbs enabled={animEnabled}/>
 
             {navPage === "experience" && <>
             {/* Prism grid */}
