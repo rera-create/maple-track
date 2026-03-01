@@ -167,7 +167,7 @@ function Circuitry({ enabled }) {
       chars.forEach((ch, i) => {
         const a = rotOffset + step * i;
         ctx.save();
-        ctx.rotate(a); ctx.translate(0,-r); ctx.rotate(Math.PI);
+        ctx.rotate(a); ctx.translate(0,-r);
         ctx.fillText(ch, 0, 0);
         ctx.restore();
       });
