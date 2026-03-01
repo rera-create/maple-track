@@ -418,7 +418,7 @@ function Circuitry({ enabled }) {
       ctx.rotate(rot*0.05);
 
       const Rmid=R*0.94;
-      const Ro=Rmid+6, Ri=Rmid-6;
+      const Ro=Rmid+8, Ri=Rmid-8;
 
       // Three concentric boundary rings
       glowArc(Ro+14, C.amber(0.6), 6, 0.4, 0.08);
@@ -451,7 +451,7 @@ function Circuitry({ enabled }) {
         ctx.strokeStyle=C.bright(alp); ctx.lineWidth=0.5; ctx.stroke();
       }
 
-      arcText(OUTER, Rmid, -Math.PI/2, 10, 0.80);
+      arcText(OUTER, Rmid, -Math.PI/2, 14, 0.80);
 
       // ── 8 Ornate Lances radiating outward ────────────────────────────
       const spikeA=Array.from({length:8},(_,i)=>(PI2/8)*i-Math.PI/2);
