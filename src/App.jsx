@@ -369,7 +369,7 @@ function Circuitry({ enabled }) {
     // Leader records its angle every frame. Each trailer replays
     // the leader's exact motion N frames later. No springs, no drift.
     const LDIST   = PI2 * 1.25;
-    const DELAY   = 6;
+    const DELAY   = 20;
     let   ldist   = 0;
     let   lgoing  = true;
     let   langle  = 0;
@@ -496,7 +496,7 @@ function Circuitry({ enabled }) {
         const ease = p < 0.15 ? (p / 0.15 * 0.9 + 0.1)
                    : p > 0.80 ? Math.max((1 - p) / 0.20, 0.15)
                    : 1.0;
-        const vel  = 0.055 * ease;
+        const vel  = 0.04 * ease;
         langle += vel;
         ldist  += vel;
         if (ldist >= LDIST) {
@@ -526,8 +526,8 @@ function Circuitry({ enabled }) {
         }
       }
 
-      // Trim
-      if (history.length > 5 * DELAY + 20) history.splice(0, history.length - (5 * DELAY + 20));
+      // Trim — must keep enough for all 5 trailers
+      if (history.length > 5 * DELAY + 60) history.splice(0, history.length - (5 * DELAY + 60));
 
       for (let i = 0; i < 5; i++) {
         ctx.save(); ctx.rotate(angles[i]); ctx.translate(0, -Ro - 4);
