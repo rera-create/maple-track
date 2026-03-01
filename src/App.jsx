@@ -162,7 +162,7 @@ function Circuitry({ enabled }) {
       ctx.font = `${size}px serif`;
       ctx.fillStyle = C.bright(alpha);
       ctx.shadowColor = C.gold(0.8);
-      ctx.shadowBlur  = 6;
+      ctx.shadowBlur = 5;
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
       chars.forEach((ch, i) => {
         const a = rotOffset + step * i;
@@ -181,7 +181,7 @@ function Circuitry({ enabled }) {
 
       // ── Outer glow pass ──
       ctx.shadowColor = C.gold(0.9);
-      ctx.shadowBlur  = 18;
+      ctx.shadowBlur = 17;
 
       // Main spearhead — elegant diamond with stepped shoulders
       ctx.beginPath();
@@ -216,7 +216,7 @@ function Circuitry({ enabled }) {
       // ── Side filigree fins at shoulder level ──
       // Left fin
       ctx.save();
-      ctx.shadowColor = C.amber(0.7); ctx.shadowBlur = 6;
+      ctx.shadowColor = C.amber(0.7); ctx.shadowBlur = 5;
       ctx.beginPath();
       ctx.moveTo( baseW*0.70, len*0.32);
       ctx.lineTo( baseW*1.45, len*0.24);   // sweeps outward
@@ -265,7 +265,7 @@ function Circuitry({ enabled }) {
       // ── Ornamental diamond node at mid-shaft (44%) ──
       ctx.save();
       ctx.translate(0, len*0.44);
-      ctx.shadowColor = C.gold(0.9); ctx.shadowBlur = 8;
+      ctx.shadowColor = C.gold(0.9); ctx.shadowBlur = 7;
       const dn = baseW * 0.22;
       ctx.beginPath();
       ctx.moveTo(0, -dn); ctx.lineTo(dn*0.6, 0); ctx.lineTo(0, dn); ctx.lineTo(-dn*0.6, 0);
@@ -311,7 +311,7 @@ function Circuitry({ enabled }) {
 
     const drawStar = (ctx, r1, r2, alpha, fill=true) => {
       ctx.shadowColor = C.gold(1.0);
-      ctx.shadowBlur  = 18;
+      ctx.shadowBlur = 17;
       ctx.beginPath();
       for(let i=0;i<8;i++){
         const a=(PI2/8)*i-Math.PI/4, r=i%2===0?r1:r2;
@@ -332,7 +332,7 @@ function Circuitry({ enabled }) {
 
     const drawGear = (ctx, r, alpha) => {
       ctx.shadowColor = C.amber(0.8);
-      ctx.shadowBlur  = 10;
+      ctx.shadowBlur = 10;
       ctx.beginPath(); ctx.arc(0,0,r,0,PI2);
       ctx.strokeStyle=C.bright(alpha); ctx.lineWidth=1.1; ctx.stroke();
       ctx.beginPath(); ctx.arc(0,0,r*0.52,0,PI2);
@@ -364,6 +364,18 @@ function Circuitry({ enabled }) {
     };
 
     let rot=0, tick=0;
+
+    // Lance state — history buffer
+    // Leader records its angle every frame. Each trailer replays
+    // the leader's exact motion N frames later. No springs, no drift.
+    const LDIST   = PI2 * 1.25;
+    const DELAY   = 6;
+    let   ldist   = 0;
+    let   lgoing  = true;
+    let   langle  = 0;
+    let   stoppedFrames = 0;
+    const history = [0];
+
     const draw = () => {
       drawRef.current = draw;
       const W=canvas.width, H=canvas.height;
@@ -453,52 +465,77 @@ function Circuitry({ enabled }) {
 
       arcText(OUTER, Rmid, -Math.PI/2, 14, 0.80);
 
-      // ── 5 Ornate Lances — spring-flock behaviour ──────────────────────
-      // A group angle drifts slowly around the ring. Each lance has a
-      // rest offset from its neighbours. When the group accelerates the
-      // lances spread (momentum), then the spring pulls them back together.
-      const N = 5;
-      // Evenly-spaced rest positions (angular gap between each lance)
-      const REST_GAP  = (PI2 * 0.18);   // ~65° apart at rest
-      const SPREAD_AMP = 0.13;           // how far they stretch out
-      const SPREAD_FREQ = 0.008;         // how fast the spread oscillates
-
-      // Group leader angle — drifts slowly CW independent of ring rotation
-      const groupAngle = tick * 0.004;
-
-      const lanceAngles = Array.from({length: N}, (_, i) => {
-        // Each lance stretches away from its rest position by an amount
-        // that depends on how far it is from the "front" of the group.
-        // Lance 0 leads, lance N-1 trails. The front compresses first,
-        // the back lags — then the spring snaps them all back.
-        const restA   = groupAngle + (i - (N-1)*0.5) * REST_GAP;
-        const stretch = Math.sin(tick * SPREAD_FREQ) * SPREAD_AMP * (i - (N-1)*0.5);
-        return restA + stretch;
-      });
-
-      // Draw the 5 big lances + stars at their tips
-      lanceAngles.forEach((a) => {
-        ctx.save(); ctx.rotate(a); ctx.translate(0, -Ro - 4);
-        drawSpear(ctx, R*0.52, 11, 0.70);
+      // ── Stars & gears — fixed to the 8 evenly-spaced ring positions ──
+      const fixedA = Array.from({length:8}, (_,i) => (PI2/8)*i - Math.PI/2);
+      fixedA.filter((_,i)=>i%2===0).forEach(a=>{
+        ctx.save(); ctx.rotate(a); ctx.translate(0,-(Ro+6+R*0.52));
+        drawStar8(ctx,28,9,0.82);
         ctx.restore();
       });
-      // Crown star at each lance tip
-      lanceAngles.forEach((a) => {
-        ctx.save(); ctx.rotate(a); ctx.translate(0, -(Ro + 6 + R*0.52));
-        drawStar8(ctx, 28, 9, 0.82);
+      fixedA.filter((_,i)=>i%2!==0).forEach(a=>{
+        ctx.save(); ctx.rotate(a); ctx.translate(0,-(Ro+6+R*0.32));
+        drawStar(ctx,20,7,0.65);
         ctx.restore();
       });
-      // Gear medallions sit midway between adjacent lances
-      for (let i = 0; i < N - 1; i++) {
-        const aL = lanceAngles[i];
-        const aR = lanceAngles[i + 1];
-        const mid = aL + 0.5 * ((aR - aL + Math.PI*3) % PI2 - Math.PI);
+      for(let i=0;i<8;i++){
+        const a = fixedA[i] + Math.PI/16;
         ctx.save();
-        ctx.translate(Math.cos(mid)*(Ro+R*0.12), Math.sin(mid)*(Ro+R*0.12));
-        drawGear(ctx, R*0.065, 0.42);
+        ctx.translate(Math.cos(a)*(Ro+R*0.12), Math.sin(a)*(Ro+R*0.12));
+        drawGear(ctx,R*0.065,0.42);
         ctx.restore();
       }
-      ctx.restore();
+
+      // ── 5 Lance shafts — history playback ────────────────────────────
+      // Leader eases in, cruises, eases out. Records angle every frame.
+      // Each trailer reads history[frame - i*DELAY] — identical motion,
+      // just delayed. When leader finishes and history drains, all are
+      // at the same final angle. Snap and restart.
+
+      if (lgoing) {
+        const p    = Math.min(ldist / LDIST, 1);
+        const ease = p < 0.15 ? (p / 0.15 * 0.9 + 0.1)
+                   : p > 0.80 ? Math.max((1 - p) / 0.20, 0.15)
+                   : 1.0;
+        const vel  = 0.14 * ease;
+        langle += vel;
+        ldist  += vel;
+        if (ldist >= LDIST) {
+          ldist  = LDIST;
+          lgoing = false;
+        }
+      }
+
+      // Always record leader angle
+      history.push(langle);
+
+      const angles = [langle];
+      for (let i = 1; i < 5; i++) {
+        const idx = Math.max(0, history.length - 1 - i * DELAY);
+        angles.push(history[idx]);
+      }
+
+      // Once stopped, wait for last trailer to catch up then restart
+      if (!lgoing) {
+        stoppedFrames++;
+        if (stoppedFrames >= 5 * DELAY + 5) {
+          history.length = 0;
+          history.push(langle);
+          ldist = 0;
+          lgoing = true;
+          stoppedFrames = 0;
+        }
+      }
+
+      // Trim
+      if (history.length > 5 * DELAY + 20) history.splice(0, history.length - (5 * DELAY + 20));
+
+      for (let i = 0; i < 5; i++) {
+        ctx.save(); ctx.rotate(angles[i]); ctx.translate(0, -Ro - 4);
+        drawSpear(ctx, R*0.52, 11, 0.70);
+        ctx.restore();
+      }
+
+      ctx.restore(); // end outer ring save
 
 
       // ════════════════════════════════════════════════════════════════════
@@ -508,7 +545,7 @@ function Circuitry({ enabled }) {
       ctx.translate(cx,cy);
       ctx.rotate(-rot*0.08);
       const Rhex=R*0.85;
-      ctx.shadowColor=C.amber(0.3); ctx.shadowBlur=5;
+      ctx.shadowColor=C.amber(0.3); ctx.shadowBlur = 5;
       drawPoly(12, Rhex, 0.18, 0.6);
       ctx.shadowBlur=0;
       // Chord lines across the 12-gon (every other vertex connected)
@@ -545,7 +582,7 @@ function Circuitry({ enabled }) {
       ctx.rotate(-rot*0.10);
       const R1b=R*0.74;
       // Three rings in the band
-      ctx.shadowColor=C.amber(0.5); ctx.shadowBlur=10;
+      ctx.shadowColor=C.amber(0.5); ctx.shadowBlur = 10;
       ctx.beginPath(); ctx.arc(0,0,R1b,0,PI2);
       ctx.strokeStyle=C.bright(0.28); ctx.lineWidth=1.1; ctx.stroke();
       ctx.beginPath(); ctx.arc(0,0,R1b*0.935,0,PI2);
@@ -594,7 +631,7 @@ function Circuitry({ enabled }) {
       ctx.rotate(rot*0.07);
       const Rhg=R*0.67;
       // Star of David style — two overlapping triangles
-      ctx.shadowColor=C.gold(0.5); ctx.shadowBlur=8;
+      ctx.shadowColor=C.gold(0.5); ctx.shadowBlur = 7;
       [0, Math.PI/3].forEach((offset,ti)=>{
         ctx.beginPath();
         for(let i=0;i<3;i++){
@@ -625,7 +662,7 @@ function Circuitry({ enabled }) {
       ctx.rotate(rot*0.15);
       const R2mid=R*0.58;
       const R2o=R2mid+5.5, R2i=R2mid-5.5;
-      ctx.shadowColor=C.gold(0.7); ctx.shadowBlur=12;
+      ctx.shadowColor=C.gold(0.7); ctx.shadowBlur = 12;
       ctx.beginPath(); ctx.arc(0,0,R2o,0,PI2);
       ctx.strokeStyle=C.bright(0.38); ctx.lineWidth=1.3; ctx.stroke();
       ctx.beginPath(); ctx.arc(0,0,R2i,0,PI2);
@@ -662,7 +699,7 @@ function Circuitry({ enabled }) {
       ctx.translate(cx,cy);
       ctx.rotate(-rot*0.12);
       const Rpent=R*0.50;
-      ctx.shadowColor=C.amber(0.3); ctx.shadowBlur=6;
+      ctx.shadowColor=C.amber(0.3); ctx.shadowBlur = 5;
       // Pentagon outline
       drawPoly(5, Rpent, 0.13, 0.5);
       // Pentagram star lines
@@ -697,7 +734,7 @@ function Circuitry({ enabled }) {
       ctx.rotate(-rot*0.22);
       const R3mid=R*0.405;
       const R3o=R3mid+5, R3i=R3mid-5;
-      ctx.shadowColor=C.gold(0.6); ctx.shadowBlur=10;
+      ctx.shadowColor=C.gold(0.6); ctx.shadowBlur = 10;
       ctx.beginPath(); ctx.arc(0,0,R3o,0,PI2);
       ctx.strokeStyle=C.bright(0.32); ctx.lineWidth=1.0; ctx.stroke();
       ctx.beginPath(); ctx.arc(0,0,R3i,0,PI2);
@@ -719,7 +756,7 @@ function Circuitry({ enabled }) {
       ctx.translate(cx,cy);
       ctx.rotate(rot*0.18);
       const Rsq=R*0.325;
-      ctx.shadowColor=C.gold(0.4); ctx.shadowBlur=7;
+      ctx.shadowColor=C.gold(0.4); ctx.shadowBlur = 7;
       drawPoly(4, Rsq, 0.22, 0.7);          // square
       ctx.rotate(Math.PI/4);
       drawPoly(4, Rsq*0.88, 0.12, 0.5);     // rotated inner square = diamond
@@ -741,7 +778,7 @@ function Circuitry({ enabled }) {
       ctx.translate(cx,cy);
       ctx.rotate(rot*0.32);
       const R4=R*0.26;
-      ctx.shadowColor=C.amber(0.6); ctx.shadowBlur=8;
+      ctx.shadowColor=C.amber(0.6); ctx.shadowBlur = 7;
       ctx.beginPath(); ctx.arc(0,0,R4,0,PI2);
       ctx.strokeStyle=C.bright(0.32); ctx.lineWidth=1.0; ctx.stroke();
       ctx.beginPath(); ctx.arc(0,0,R4*0.82,0,PI2);
@@ -788,7 +825,7 @@ function Circuitry({ enabled }) {
       ctx.restore();
 
       // Central glowing orb
-      ctx.shadowColor=C.glow(1); ctx.shadowBlur=20;
+      ctx.shadowColor=C.glow(1); ctx.shadowBlur = 20;
       const orbGrad=ctx.createRadialGradient(0,0,0,0,0,R*0.055);
       orbGrad.addColorStop(0,C.bright(0.75));
       orbGrad.addColorStop(0.5,C.gold(0.45));
@@ -814,7 +851,7 @@ function Circuitry({ enabled }) {
       rot+=0.010; tick++;
       if (enabledRef.current) raf=requestAnimationFrame(draw);
     };
-    draw();
+    draw();    draw();
     return ()=>{ cancelAnimationFrame(raf); window.removeEventListener("resize",resize); };
   },[]);
   return (
