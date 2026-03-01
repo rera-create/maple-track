@@ -41,8 +41,14 @@ function Background() {
 
 
 // ── Dust canvas rendered inside the sidebar, above sidebar content ────────────
-function SidebarDust() {
+function SidebarDust({ enabled }) {
   const canvasRef = useRef(null);
+  const enabledRef = useRef(enabled);
+  const drawRef = useRef(null);
+  useEffect(() => {
+    enabledRef.current = enabled;
+    if (enabled && drawRef.current) drawRef.current();
+  }, [enabled]);
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -67,6 +73,7 @@ function SidebarDust() {
 
     let t = 0;
     const draw = () => {
+      drawRef.current = draw;
       const W = canvas.width, H = canvas.height;
       ctx.clearRect(0, 0, W, H);
 
@@ -90,7 +97,7 @@ function SidebarDust() {
       }
 
       t++;
-      raf = requestAnimationFrame(draw);
+      if (enabledRef.current) raf = requestAnimationFrame(draw);
     };
     draw();
     return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
@@ -109,8 +116,14 @@ function SidebarDust() {
 
 
 // ── Magic circle — extravagant, shining, with color ─────────────────────────
-function Circuitry() {
+function Circuitry({ enabled }) {
   const canvasRef = useRef(null);
+  const enabledRef = useRef(enabled);
+  const drawRef = useRef(null);
+  useEffect(() => {
+    enabledRef.current = enabled;
+    if (enabled && drawRef.current) drawRef.current();
+  }, [enabled]);
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -352,6 +365,7 @@ function Circuitry() {
 
     let rot=0;
     const draw = () => {
+      drawRef.current = draw;
       const W=canvas.width, H=canvas.height;
       ctx.clearRect(0,0,W,H);
       ctx.lineCap="round"; ctx.lineJoin="round";
@@ -780,8 +794,8 @@ function Circuitry() {
       ctx.restore();
 
 
-      rot+=0.006;
-      raf=requestAnimationFrame(draw);
+      rot+=0.010;
+      if (enabledRef.current) raf=requestAnimationFrame(draw);
     };
     draw();
     return ()=>{ cancelAnimationFrame(raf); window.removeEventListener("resize",resize); };
@@ -1050,6 +1064,10 @@ export default function App() {
   const [mounted,  setMounted]  = useState(false);
   const [hovered,  setHovered]  = useState(null);
   const [navPage,  setNavPage]  = useState("experience");
+  const [animEnabled, setAnimEnabled] = useState(true);
+  const [editingField, setEditingField] = useState(null); // 'eyebrow' | 'name'
+  const [eyebrow, setEyebrow] = useState("Bera · AbyssGuild");
+  const [guildName, setGuildName] = useState("Abyss\nGuild");
 
   useEffect(() => { setTimeout(() => setMounted(true), 60); }, []);
 
@@ -1250,6 +1268,97 @@ export default function App() {
           color: var(--G);
           font-weight: 400;
           filter: drop-shadow(0 0 4px rgba(240,220,128,.6));
+        }
+
+        /* Inline edit fields */
+        .editable-field {
+          cursor: pointer;
+          position: relative;
+          display: inline-flex;
+          align-items: baseline;
+          gap: 6px;
+        }
+        .editable-field:hover .edit-icon { opacity: 1; }
+        .edit-icon {
+          font-size: 11px;
+          opacity: 0;
+          transition: opacity .15s;
+          color: rgba(240,220,128,0.55);
+          font-style: normal;
+          flex-shrink: 0;
+          align-self: center;
+        }
+        .name-edit-icon { font-size: 14px; }
+
+        /* ── Animations toggle ── */
+        .anim-toggle { user-select: none; }
+        .toggle-pill {
+          margin-left: auto;
+          width: 30px; height: 16px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(240,220,128,0.25);
+          border-radius: 8px;
+          position: relative;
+          flex-shrink: 0;
+          transition: background .18s, border-color .18s;
+          cursor: pointer;
+        }
+        .toggle-pill.on {
+          background: rgba(240,220,128,0.22);
+          border-color: rgba(240,220,128,0.60);
+          box-shadow: 0 0 6px rgba(240,220,128,0.30);
+        }
+        .toggle-knob {
+          position: absolute;
+          top: 2px; left: 2px;
+          width: 10px; height: 10px;
+          border-radius: 50%;
+          background: rgba(240,220,128,0.40);
+          transition: transform .18s, background .18s;
+        }
+        .toggle-pill.on .toggle-knob {
+          transform: translateX(14px);
+          background: rgba(240,220,128,0.90);
+          box-shadow: 0 0 4px rgba(240,220,128,0.6);
+        }
+
+        /* Pause all CSS animations when anim-off is set */
+        .anim-off *, .anim-off *::before, .anim-off *::after {
+          animation-play-state: paused !important;
+          transition: none !important;
+        }
+        .placeholder-text {
+          color: rgba(240,220,128,0.25);
+          font-style: italic;
+        }
+        .sidebar-edit-input {
+          background: transparent;
+          border: none;
+          border-bottom: 1px solid rgba(240,220,128,0.45);
+          outline: none;
+          color: inherit;
+          font-family: inherit;
+          caret-color: rgba(240,220,128,0.9);
+          padding: 0;
+          width: 100%;
+        }
+        .eyebrow-input {
+          font-family: var(--mono);
+          font-size: 9px;
+          letter-spacing: .28em;
+          text-transform: uppercase;
+          color: rgba(240,220,128,0.75);
+          margin-bottom: 10px;
+          display: block;
+        }
+        .name-input {
+          font-family: 'Bebas Neue', sans-serif;
+          font-size: 46px;
+          letter-spacing: .06em;
+          line-height: 1;
+          color: var(--text);
+          margin-bottom: 14px;
+          display: block;
         }
 
         /* Sidebar scrollable body */
@@ -1877,16 +1986,47 @@ export default function App() {
         ::-webkit-scrollbar-thumb { background: rgba(var(--Gr),0.25); }
       `}</style>
 
-      <div className="root" style={{height:"100vh",overflow:"hidden",position:"relative"}}>
+      <div className={`root${animEnabled ? "" : " anim-off"}`} style={{height:"100vh",overflow:"hidden",position:"relative"}}>
         <Background/>
 
         <div className="layout">
 
           {/* ── Left: Sidebar dashboard ── */}
-          <aside className={`sidebar ${mounted ? "in" : ""}`}><div className="sidebar-floor"/><SidebarDust/>
+          <aside className={`sidebar ${mounted ? "in" : ""}`}><div className="sidebar-floor"/><SidebarDust enabled={animEnabled}/>
             <div className="sidebar-hdr">
-              <div className="sidebar-eyebrow">Bera · AbyssGuild</div>
-              <div className="sidebar-name">Abyss<br/>Guild</div>
+              {/* Eyebrow — editable */}
+              {editingField === 'eyebrow' ? (
+                <input
+                  autoFocus
+                  className="sidebar-edit-input eyebrow-input"
+                  value={eyebrow}
+                  onChange={e => setEyebrow(e.target.value)}
+                  onBlur={() => setEditingField(null)}
+                  onKeyDown={e => e.key === 'Enter' && setEditingField(null)}
+                />
+              ) : (
+                <div className="sidebar-eyebrow editable-field" onClick={() => setEditingField('eyebrow')}>
+                  {eyebrow || <span className="placeholder-text">Insert Text</span>}
+                  <span className="edit-icon">✎</span>
+                </div>
+              )}
+
+              {/* Guild name — editable */}
+              {editingField === 'name' ? (
+                <input
+                  autoFocus
+                  className="sidebar-edit-input name-input"
+                  value={guildName.replace('\n', ' ')}
+                  onChange={e => setGuildName(e.target.value)}
+                  onBlur={() => setEditingField(null)}
+                  onKeyDown={e => e.key === 'Enter' && setEditingField(null)}
+                />
+              ) : (
+                <div className="sidebar-name editable-field" onClick={() => setEditingField('name')}>
+                  {guildName || <span className="placeholder-text">Insert Text</span>}
+                  <span className="edit-icon name-edit-icon">✎</span>
+                </div>
+              )}
             </div>
 
             <div className="sidebar-body">
@@ -1931,6 +2071,22 @@ export default function App() {
                     <span className="nav-sub">{item.sub}</span>
                   </button>
                 ))}
+                <div className="nav-sep"/>
+                <div className="nav-section-label">Settings</div>
+                <label className="nav-item anim-toggle" style={{cursor:'pointer'}}>
+                  <div className="nav-icon">
+                    <svg viewBox="0 0 16 16">
+                      <circle cx="8" cy="8" r="5"/><line x1="8" y1="1" x2="8" y2="3"/>
+                      <line x1="8" y1="13" x2="8" y2="15"/><line x1="1" y1="8" x2="3" y2="8"/>
+                      <line x1="13" y1="8" x2="15" y2="8"/>
+                    </svg>
+                  </div>
+                  <span className="nav-label">Animations</span>
+                  <div className={`toggle-pill${animEnabled ? ' on' : ''}`}
+                    onClick={e => { e.preventDefault(); setAnimEnabled(v => !v); }}>
+                    <div className="toggle-knob"/>
+                  </div>
+                </label>
               </nav>
 
 
@@ -1939,7 +2095,7 @@ export default function App() {
 
           {/* ── Right: Cards + detail ── */}
           <main className={`content ${mounted ? "in" : ""}`}>
-            <Circuitry/>
+            <Circuitry enabled={animEnabled}/>
 
             {navPage === "experience" && <>
             {/* Prism grid */}
