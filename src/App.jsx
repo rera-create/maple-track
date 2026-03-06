@@ -430,7 +430,7 @@ function Circuitry({ enabled }) {
       ctx.rotate(rot*0.05);
 
       const Rmid=R*0.94;
-      const Ro=Rmid+8, Ri=Rmid-8;
+      const Ro=Rmid+7, Ri=Rmid-7;
 
       // Three concentric boundary rings
       glowArc(Ro+14, C.amber(0.6), 6, 0.4, 0.08);
