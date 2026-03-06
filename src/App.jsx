@@ -1235,6 +1235,8 @@ export default function App() {
   const [animEnabled, setAnimEnabled] = useState(true);
   const [editingField, setEditingField] = useState(null); // 'eyebrow' | 'name'
   const [eyebrow, setEyebrow] = useState("Bera · AbyssGuild");
+  const [chars, setChars] = useState(characters);
+  const dragIdx = useRef(null);
   const [guildName, setGuildName] = useState("Abyss\nGuild");
 
   useEffect(() => { setTimeout(() => setMounted(true), 60); }, []);
@@ -2269,17 +2271,32 @@ export default function App() {
             {navPage === "experience" && <>
             {/* Prism grid */}
             <div className="grid">
-              {characters.map((char, i) => (
-                <PrismCard
+              {chars.map((char, i) => (
+                <div
                   key={char.name}
-                  char={char}
-                  index={i}
-                  isSel={selected?.name === char.name}
-                  isHov={hovered === char.name}
-                  onClick={() => setSelected(selected?.name === char.name ? null : char)}
-                  onEnter={() => setHovered(char.name)}
-                  onLeave={() => setHovered(null)}
-                />
+                  draggable
+                  onDragStart={() => { dragIdx.current = i; }}
+                  onDragOver={e => e.preventDefault()}
+                  onDrop={() => {
+                    const from = dragIdx.current;
+                    const to   = i;
+                    if (from === to) return;
+                    const next = [...chars];
+                    next.splice(to, 0, next.splice(from, 1)[0]);
+                    setChars(next);
+                  }}
+                  style={{ cursor: 'grab' }}
+                >
+                  <PrismCard
+                    char={char}
+                    index={i}
+                    isSel={selected?.name === char.name}
+                    isHov={hovered === char.name}
+                    onClick={() => setSelected(selected?.name === char.name ? null : char)}
+                    onEnter={() => setHovered(char.name)}
+                    onLeave={() => setHovered(null)}
+                  />
+                </div>
               ))}
             </div>
 
